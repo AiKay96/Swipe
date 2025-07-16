@@ -16,7 +16,7 @@ from src.runner.setup import get_db
 
 load_dotenv()
 DATABASE_URL = os.getenv(
-    "TEST_DATABASE_URL", "postgresql://admin:admin@localhost:5432/ekimo_test"
+    "TEST_DATABASE_URL", "postgresql://admin:admin@localhost:5432/swipe_test"
 )
 engine = create_engine(DATABASE_URL, future=True)
 TestingSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
