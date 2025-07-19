@@ -15,7 +15,7 @@ class AuthService:
     users: UserRepository
 
     def authenticate(self, mail: str, password: str) -> Any:
-        user = self.users.read(mail)
+        user = self.users.read_by_mail(mail)
         if not user or not bcrypt.checkpw(password.encode(), user.password.encode()):
             raise DoesNotExistError("Invalid credentials")
 

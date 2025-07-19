@@ -15,5 +15,5 @@ class UserRepository(Protocol):
     def create(self, user: User) -> User:
         pass
 
-    def read(self, mail: str) -> User:
+    def read_by_mail(self, mail: str) -> User | None:
         pass

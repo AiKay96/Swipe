@@ -11,7 +11,7 @@ def test_should_not_read_unknown_user(db_session: Any) -> None:
     repo = UserRepository(db_session)
 
     with pytest.raises(DoesNotExistError):
-        repo.read(Fake().user().mail)
+        repo.read_by_mail(Fake().user().mail)
 
 
 def test_should_persist(db_session: Any) -> None:
@@ -19,7 +19,7 @@ def test_should_persist(db_session: Any) -> None:
     user = Fake().user()
 
     repo.create(user)
-    db_user = repo.read(user.mail)
+    db_user = repo.read_by_mail(user.mail)
 
     assert db_user.mail == user.mail
     assert db_user.id == user.id

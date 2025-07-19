@@ -26,7 +26,7 @@ class UserRepository:
         self.db.add(db_user)
         self.db.commit()
 
-    def read(self, mail: str) -> User:
+    def read_by_mail(self, mail: str) -> User:
         user = self.db.query(UserModel).filter_by(mail=mail).first()
         if not user:
             raise DoesNotExistError

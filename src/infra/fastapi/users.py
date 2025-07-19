@@ -7,6 +7,7 @@ from starlette.responses import JSONResponse
 from src.core.errors import ExistsError
 from src.core.users import User
 from src.infra.fastapi.dependables import UserRepositoryDependable
+from src.infra.services.user import UserService
 
 user_api = APIRouter(tags=["Users"])
 
@@ -42,7 +43,7 @@ def register(
 ) -> dict[str, Any] | JSONResponse:
     try:
         user = User(**request.model_dump())
-        users.create(user)
+        UserService(users).register(user)
         response_data = extract_user_fields(user)
         return {"user": response_data}
 
