@@ -15,7 +15,9 @@ user_api = APIRouter(tags=["Users"])
 def extract_user_fields(user: User) -> dict[str, Any]:
     return {
         "mail": user.mail,
-        "password": user.password,
+        "username": user.username,
+        "display_name": user.display_name,
+        "bio": user.bio,
     }
 
 
@@ -26,7 +28,9 @@ class CreateUserRequest(BaseModel):
 
 class UserItem(BaseModel):
     mail: str
-    password: str
+    username: str
+    display_name: str
+    bio: str | None
 
 
 class UserItemEnvelope(BaseModel):
@@ -42,10 +46,10 @@ def register(
     request: CreateUserRequest, users: UserRepositoryDependable
 ) -> dict[str, Any] | JSONResponse:
     try:
-        user = User(**request.model_dump())
-        UserService(users).register(user)
-        response_data = extract_user_fields(user)
-        return {"user": response_data}
+        service = UserService(users)
+        service.register(request.mail, request.password)
+        user = service.get_by_mail(request.mail)
+        return {"user": extract_user_fields(user)}
 
     except ExistsError:
         return JSONResponse(

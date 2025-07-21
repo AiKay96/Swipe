@@ -5,17 +5,37 @@ from faker import Faker
 
 from src.core.users import User
 
+_faker = Faker()
 
-@dataclass
-class Fake:
-    faker: Faker = field(default_factory=Faker)
 
-    def user_dict(self) -> dict[str, Any]:
+@dataclass(frozen=True)
+class FakeUser:
+    mail: str = field(default_factory=lambda: _faker.email())
+    password: str = field(default_factory=lambda: _faker.password())
+    username: str = field(default_factory=lambda: _faker.unique.user_name())
+    display_name: str = field(default_factory=lambda: _faker.unique.name())
+    bio: str = field(default_factory=lambda: _faker.sentence(nb_words=10))
+
+    def as_dict(self) -> dict[str, Any]:
         return {
-            "mail": self.faker.email(),
-            "password": self.faker.password(),
+            "mail": self.mail,
+            "password": self.password,
+            "username": self.username,
+            "display_name": self.display_name,
+            "bio": self.bio,
         }
 
-    def user(self) -> User:
-        data = self.user_dict()
-        return User(**data)
+    def as_create_dict(self) -> dict[str, str]:
+        return {
+            "mail": self.mail,
+            "password": self.password,
+        }
+
+    def as_user(self) -> User:
+        return User(
+            mail=self.mail,
+            password=self.password,
+            username=self.username,
+            display_name=self.display_name,
+            bio=self.bio,
+        )

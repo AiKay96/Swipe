@@ -14,13 +14,13 @@ from src.runner.config import settings
 class AuthService:
     users: UserRepository
 
-    def authenticate(self, mail: str, password: str) -> Any:
-        user = self.users.read_by_mail(mail)
+    def authenticate(self, username: str, password: str) -> Any:
+        user = self.users.read_by_username(username)
         if not user or not bcrypt.checkpw(password.encode(), user.password.encode()):
             raise DoesNotExistError("Invalid credentials")
 
         payload = {
-            "sub": user.mail,
+            "sub": user.username,
             "exp": datetime.utcnow()
             + timedelta(minutes=settings.access_token_expire_minutes),
         }
