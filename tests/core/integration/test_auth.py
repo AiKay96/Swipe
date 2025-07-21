@@ -65,6 +65,26 @@ def test_token_structure(client: TestClient) -> None:
     assert len(parts) == 3
 
 
+def test_should_refresh_token(client: TestClient) -> None:
+    fake = FakeUser()
+    response = client.post("/users", json=fake.as_create_dict())
+    assert response.status_code == 201
+
+    username = response.json()["user"]["username"]
+    login_data = {"username": username, "password": fake.password}
+    login_response = client.post("/auth", data=login_data)
+    assert login_response.status_code == 200
+
+    refresh_token = login_response.cookies.get("refresh_token")
+    assert refresh_token is not None
+
+    client.cookies.set("refresh_token", refresh_token)
+    refresh_response = client.post("/refresh")
+
+    assert refresh_response.status_code == 200
+    assert "access_token" in refresh_response.json()
+
+
 def test_protected_requires_token() -> None:
     assert True
 

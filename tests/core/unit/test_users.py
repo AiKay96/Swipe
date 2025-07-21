@@ -34,7 +34,8 @@ def test_should_not_create(db_session: Any) -> None:
     with pytest.raises(ExistsError):
         repo.create(user)
 
-def test_should_read_user_by_username_case_insensitive(db_session):
+
+def test_should_read_user_by_username_case_insensitive(db_session: Any) -> None:
     repo = UserRepository(db_session)
     fake = FakeUser()
     user = fake.as_user()
