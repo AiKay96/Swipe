@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 
 import bcrypt
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.core.errors import ExistsError
 from src.core.users import User
 from src.infra.models.user import User as UserModel
+from src.infra.models.user import User as UserORM
 
 
 @dataclass
@@ -43,7 +45,8 @@ class UserRepository:
         )
 
     def read_by_username(self, username: str) -> User | None:
-        user = self.db.query(UserModel).filter_by(username=username).first()
+        stmt = select(UserORM).where(UserORM.username.ilike(username))
+        user = self.db.scalar(stmt)
         if not user:
             return None
         return User(

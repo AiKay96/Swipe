@@ -11,6 +11,7 @@ class UserService:
     repo: UserRepository
 
     def register(self, mail: str, password: str) -> User:
+        mail = mail.lower()
         if self.repo.read_by_mail(mail):
             raise ExistsError
 
@@ -25,7 +26,14 @@ class UserService:
         return user
 
     def get_by_mail(self, mail: str) -> User:
+        mail = mail.lower()
         user = self.repo.read_by_mail(mail)
+        if not user:
+            raise DoesNotExistError
+        return user
+
+    def get_by_username(self, username: str) -> User:
+        user = self.repo.read_by_username(username)
         if not user:
             raise DoesNotExistError
         return user

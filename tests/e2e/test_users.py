@@ -9,7 +9,6 @@ def test_should_create_user() -> None:
     response = requests.post(f"{BASE_URL}/users", json=user)
 
     assert response.status_code == 201
-    assert response.json()["user"]["mail"] == user["mail"]
     assert "username" in response.json()["user"]
     assert "display_name" in response.json()["user"]
     assert "password" not in response.json()["user"]

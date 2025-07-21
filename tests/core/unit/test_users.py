@@ -33,3 +33,16 @@ def test_should_not_create(db_session: Any) -> None:
 
     with pytest.raises(ExistsError):
         repo.create(user)
+
+def test_should_read_user_by_username_case_insensitive(db_session):
+    repo = UserRepository(db_session)
+    fake = FakeUser()
+    user = fake.as_user()
+
+    repo.create(user)
+
+    created = repo.read_by_username(user.username.lower())
+
+    assert created is not None
+    assert created.username == user.username
+    assert created.mail == user.mail
