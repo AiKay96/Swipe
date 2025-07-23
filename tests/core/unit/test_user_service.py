@@ -9,8 +9,8 @@ from tests.fake import FakeUser
 
 def test_should_register_user() -> None:
     repo = Mock()
-    repo.read_by_mail.return_value = None
-    repo.read_by_username.return_value = None
+    repo.read_by.return_value = None
+    repo.find_by_username.return_value = None
 
     service = UserService(repo)
     fake = FakeUser()
@@ -27,7 +27,7 @@ def test_should_register_user() -> None:
 def test_should_not_register_duplicate_user() -> None:
     repo = Mock()
     fake = FakeUser()
-    repo.read_by_mail.return_value = fake.as_user()
+    repo.read_by.return_value = fake.as_user()
 
     service = UserService(repo)
 
@@ -38,7 +38,7 @@ def test_should_not_register_duplicate_user() -> None:
 def test_should_get_user_by_mail() -> None:
     repo = Mock()
     fake = FakeUser()
-    repo.read_by_mail.return_value = fake.as_user()
+    repo.read_by.return_value = fake.as_user()
 
     service = UserService(repo)
 
@@ -48,7 +48,7 @@ def test_should_get_user_by_mail() -> None:
 
 def test_should_not_get_unknown_user_by_mail() -> None:
     repo = Mock()
-    repo.read_by_mail.return_value = None
+    repo.read_by.return_value = None
 
     service = UserService(repo)
 

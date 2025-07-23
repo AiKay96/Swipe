@@ -1,7 +1,7 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from starlette.responses import JSONResponse
 
 from src.core.errors import DoesNotExistError, ExistsError
@@ -60,7 +60,7 @@ class UserUpdateRequest(BaseModel):
     display_name: str | None = None
     bio: str | None = None
 
-    @validator("username")
+    @field_validator("username")
     @classmethod
     def username_validate(cls, v: str) -> str:
         if v and "@" in v:
@@ -69,7 +69,7 @@ class UserUpdateRequest(BaseModel):
             raise ValueError("Username is too long")
         return v
 
-    @validator("display_name")
+    @field_validator("display_name")
     @classmethod
     def display_name_validate(cls, v: str) -> str:
         if v and not v.strip():
@@ -78,7 +78,7 @@ class UserUpdateRequest(BaseModel):
             raise ValueError("Display name is too long")
         return v
 
-    @validator("display_name")
+    @field_validator("display_name")
     @classmethod
     def bio_validate(cls, v: str) -> str:
         if v and not v.strip():
@@ -140,7 +140,7 @@ def get_me(user: User = Depends(get_current_user)) -> dict[str, Any]:  # noqa: B
     status_code=200,
     response_model=MeItemEnvelope,
 )
-def patch_me(
+def update_me(
     request: UserUpdateRequest,
     users: UserRepositoryDependable,
     current_user: User = Depends(get_current_user),  # noqa: B008

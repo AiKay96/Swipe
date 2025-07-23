@@ -10,7 +10,7 @@ from tests.fake import FakeUser
 def test_should_not_read_unknown_user(db_session: Any) -> None:
     repo = UserRepository(db_session)
 
-    assert repo.read_by_mail(FakeUser().as_user().mail) is None
+    assert repo.read_by(mail=FakeUser().as_user().mail) is None
 
 
 def test_should_persist(db_session: Any) -> None:
@@ -18,7 +18,7 @@ def test_should_persist(db_session: Any) -> None:
     user = FakeUser().as_user()
 
     repo.create(user)
-    db_user = repo.read_by_mail(user.mail)
+    db_user = repo.read_by(mail=user.mail)
 
     assert db_user is not None
     assert db_user.mail == user.mail
@@ -42,7 +42,7 @@ def test_should_read_user_by_username_case_insensitive(db_session: Any) -> None:
 
     repo.create(user)
 
-    created = repo.read_by_username(user.username.lower())
+    created = repo.find_by_username(user.username.lower())
 
     assert created is not None
     assert created.username == user.username

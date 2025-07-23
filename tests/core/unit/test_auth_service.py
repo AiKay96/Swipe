@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from typing import Any
+from uuid import UUID
 
 import bcrypt
 import pytest
@@ -40,14 +42,23 @@ def test_should_fail_auth_on_wrong_password() -> None:
 class FakeRepo:
     users: list[User]
 
-    def read_by_username(self, username: str) -> User | None:
+    def find_by_username(self, username: str) -> User | None:
         for u in self.users:
             if u.username == username:
                 return u
         return None
 
-    def read_by_mail(self, mail: str) -> User | None:  # noqa ARG002
+    def read_by(
+        self,
+        *,
+        user_id: UUID | None = None,  # noqa ARG002
+        mail: str | None = None,  # noqa ARG002
+        username: str | None = None,  # noqa ARG002
+    ) -> User | None:
         return None
 
     def create(self, user: User) -> User:
         return user
+
+    def update(self, user_id: UUID, updates: dict[str, Any]) -> None:  # noqa ARG002
+        pass

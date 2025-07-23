@@ -36,7 +36,7 @@ class AuthService:
         )
 
     def authenticate(self, username: str, password: str) -> tuple[str, str]:
-        user = self.users.read_by_username(username)
+        user = self.users.find_by_username(username)
         if not user or not bcrypt.checkpw(password.encode(), user.password.encode()):
             raise DoesNotExistError("Invalid credentials")
 
@@ -58,7 +58,7 @@ class AuthService:
 
     def get_user_from_token(self, token: str) -> User:
         username = self.decode_token(token, expected_type="access")
-        user = self.users.read_by_username(username)
+        user = self.users.find_by_username(username)
         if not user:
             raise DoesNotExistError("User not found")
         return user

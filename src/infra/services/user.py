@@ -13,7 +13,7 @@ class UserService:
 
     def register(self, mail: str, password: str) -> User:
         mail = mail.lower()
-        if self.repo.read_by_mail(mail):
+        if self.repo.read_by(mail=mail):
             raise ExistsError
 
         username = self.generate_unique_username()
@@ -28,13 +28,13 @@ class UserService:
 
     def get_by_mail(self, mail: str) -> User:
         mail = mail.lower()
-        user = self.repo.read_by_mail(mail)
+        user = self.repo.read_by(mail=mail)
         if not user:
             raise DoesNotExistError
         return user
 
     def get_by_username(self, username: str) -> User:
-        user = self.repo.read_by_username(username)
+        user = self.repo.find_by_username(username)
         if not user:
             raise DoesNotExistError
         return user
@@ -42,13 +42,14 @@ class UserService:
     def update_user(
         self,
         user_id: UUID,
+        *,
         username: str | None = None,
         display_name: str | None = None,
         bio: str | None = None,
     ) -> None:
         updates = {}
         if username:
-            existing = self.repo.read_by_username(username)
+            existing = self.repo.find_by_username(username)
             if existing and existing.id != user_id:
                 raise ExistsError
             updates["username"] = username
@@ -57,11 +58,11 @@ class UserService:
         if bio:
             updates["bio"] = bio
 
-        self.repo.update(str(user_id), updates)
+        self.repo.update(user_id, updates)
 
     def generate_unique_username(self) -> str:
         faker = Faker()
         username = faker.unique.user_name()
-        while self.repo.read_by_username(username):
+        while self.repo.find_by_username(username):
             username = faker.unique.user_name()
         return str(username)

@@ -18,14 +18,17 @@ class UserRepository(Protocol):
     def create(self, user: User) -> User:
         pass
 
-    def read_by_mail(self, mail: str) -> User | None:
+    def read_by(
+        self,
+        *,
+        user_id: UUID | None = None,
+        mail: str | None = None,
+        username: str | None = None,
+    ) -> User | None:
         pass
 
-    def read_by_id(self, user_id: str) -> None:
+    def find_by_username(self, username: str) -> User | None:
         pass
 
-    def read_by_username(self, username: str) -> User | None:
-        pass
-
-    def update(self, user_id: str, updates: dict[str, Any]) -> None:
+    def update(self, user_id: UUID, updates: dict[str, Any]) -> None:
         pass

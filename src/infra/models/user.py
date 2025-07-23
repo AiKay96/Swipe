@@ -4,6 +4,7 @@ from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
+from src.core.users import User as DomainUser
 from src.runner.db import Base
 
 
@@ -33,3 +34,13 @@ class User(Base):
         self.username = username
         self.display_name = display_name
         self.bio = bio
+
+    def to_object(self) -> DomainUser:
+        return DomainUser(
+            id=self.id,
+            mail=self.mail,
+            password=self.hashed_password,
+            username=self.username,
+            display_name=self.display_name,
+            bio=self.bio,
+        )
