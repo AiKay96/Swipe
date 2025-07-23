@@ -14,7 +14,7 @@ def test_should_read_user_by_id(db_session: Any) -> None:
     repo.create(user)
     found = repo.read_by(user_id=user.id)
 
-    assert found is not None
+    assert found
     assert found.id == user.id
 
 
@@ -25,7 +25,7 @@ def test_should_read_user_by_mail(db_session: Any) -> None:
     repo.create(user)
     found = repo.read_by(mail=user.mail)
 
-    assert found is not None
+    assert found
     assert found.mail == user.mail
 
 
@@ -36,7 +36,7 @@ def test_should_read_user_by_username(db_session: Any) -> None:
     repo.create(user)
     found = repo.read_by(username=user.username)
 
-    assert found is not None
+    assert found
     assert found.username == user.username
 
 
@@ -49,7 +49,7 @@ def test_should_find_user_by_username(db_session: Any) -> None:
 
     created = repo.find_by_username(user.username.lower())
 
-    assert created is not None
+    assert created
     assert created.username == user.username
     assert created.mail == user.mail
 
@@ -69,7 +69,7 @@ def test_should_persist(db_session: Any) -> None:
     repo.create(user)
     db_user = repo.read_by(mail=user.mail)
 
-    assert db_user is not None
+    assert db_user
     assert db_user.mail == user.mail
     assert db_user.id == user.id
 
@@ -102,6 +102,6 @@ def test_should_update_user_fields(db_session: Any) -> None:
     repo.update(user.id, updates)
 
     updated = repo.read_by(user_id=user.id)
-    assert updated is not None
+    assert updated
     assert updated.display_name == update_user.display_name
     assert updated.bio == update_user.bio

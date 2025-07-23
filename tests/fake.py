@@ -15,7 +15,7 @@ class FakeUser:
     password: str = field(default_factory=lambda: _faker.password())
     username: str = field(default_factory=lambda: _faker.unique.user_name())
     display_name: str = field(default_factory=lambda: _faker.unique.name())
-    bio: str = field(default_factory=lambda: _faker.sentence(nb_words=10))
+    bio: str = field(default_factory=lambda: _faker.sentence(nb_words=3))
     id: UUID = field(default_factory=lambda: UUID(_faker.uuid4()))
 
     def as_dict(self) -> dict[str, Any]:

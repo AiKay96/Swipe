@@ -34,7 +34,7 @@ def test_refresh_token_flow(test_user: dict[str, str]) -> None:
     assert auth_response.status_code == 200
 
     refresh_token = auth_response.cookies.get("refresh_token")
-    assert refresh_token is not None
+    assert refresh_token
     response = requests.post(
         f"{BASE_URL}/refresh", cookies={"refresh_token": refresh_token}
     )

@@ -32,7 +32,7 @@ def test_should_not_login_on_wrong_password(client: TestClient) -> None:
     response = client.post("/auth", data=data)
 
     assert response.status_code == 401
-    assert response.json() == {"detail": "Invalid credentials"}
+    assert response.json() == {"message": "Invalid credentials."}
 
 
 def test_should_not_login_on_unknown_user(client: TestClient) -> None:
@@ -45,7 +45,7 @@ def test_should_not_login_on_unknown_user(client: TestClient) -> None:
     response = client.post("/auth", data=data)
 
     assert response.status_code == 401
-    assert response.json() == {"detail": "Invalid credentials"}
+    assert response.json() == {"message": "Invalid credentials."}
 
 
 def test_token_structure(client: TestClient) -> None:
@@ -76,18 +76,34 @@ def test_should_refresh_token(client: TestClient) -> None:
     assert login_response.status_code == 200
 
     refresh_token = login_response.cookies.get("refresh_token")
-    assert refresh_token is not None
+    access_token = login_response.json()["access_token"]
+    assert refresh_token
+    assert access_token
 
     client.cookies.set("refresh_token", refresh_token)
-    refresh_response = client.post("/refresh")
+    headers = {"Authorization": f"Bearer {access_token}"}
+    refresh_response = client.post("/refresh", headers=headers)
 
     assert refresh_response.status_code == 200
     assert "access_token" in refresh_response.json()
 
 
-def test_should_not_refresh_with_invalid_token(client: TestClient) -> None:
+def test_should_not_refresh_invalid_token(client: TestClient) -> None:
+    fake = FakeUser()
+    response = client.post("/users", json=fake.as_create_dict())
+    assert response.status_code == 201
+
+    username = response.json()["user"]["username"]
+
+    login_response = client.post(
+        "/auth", data={"username": username, "password": fake.password}
+    )
+    assert login_response.status_code == 200
+    token = login_response.json()["access_token"]
+
     client.cookies.set("refresh_token", "invalid.token")
-    response = client.post("/refresh")
+    headers = {"Authorization": f"Bearer {token}"}
+    response = client.post("/refresh", headers=headers)
 
     assert response.status_code == 401
 
@@ -116,3 +132,29 @@ def test_should_access_with_token(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert response.json()["user"]["username"] == username
+
+
+def test_should_logout_and_clear_cookie(client: TestClient) -> None:
+    fake = FakeUser()
+    create_response = client.post("/users", json=fake.as_create_dict())
+    username = create_response.json()["user"]["username"]
+
+    login_response = client.post(
+        "/auth",
+        data={
+            "username": username,
+            "password": fake.password,
+        },
+    )
+
+    assert login_response.status_code == 200
+    assert "refresh_token" in login_response.cookies
+
+    access_token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    logout_response = client.post("/logout", headers=headers)
+
+    assert logout_response.status_code == 200
+    assert logout_response.cookies.get("refresh_token") is None
+    assert logout_response.json()["message"] == "Logged out successfully."
