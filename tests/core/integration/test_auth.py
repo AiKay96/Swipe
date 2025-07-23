@@ -85,9 +85,34 @@ def test_should_refresh_token(client: TestClient) -> None:
     assert "access_token" in refresh_response.json()
 
 
-def test_protected_requires_token() -> None:
-    assert True
+def test_should_not_refresh_with_invalid_token(client: TestClient) -> None:
+    client.cookies.set("refresh_token", "invalid.token")
+    response = client.post("/refresh")
+
+    assert response.status_code == 401
 
 
-def test_should_access_with_token() -> None:
-    assert True
+def test_protected_requires_token(client: TestClient) -> None:
+    response = client.get("/me")
+    assert response.status_code == 401
+
+
+def test_should_access_with_token(client: TestClient) -> None:
+    fake = FakeUser()
+    create_response = client.post("/users", json=fake.as_create_dict())
+    username = create_response.json()["user"]["username"]
+
+    login_response = client.post(
+        "/auth",
+        data={
+            "username": username,
+            "password": fake.password,
+        },
+    )
+    token = login_response.json()["access_token"]
+
+    headers = {"Authorization": f"Bearer {token}"}
+    response = client.get("/me", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["user"]["username"] == username

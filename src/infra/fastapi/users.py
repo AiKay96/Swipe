@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from fastapi import APIRouter, Depends
@@ -10,6 +11,7 @@ from src.infra.fastapi.dependables import UserRepositoryDependable, get_current_
 from src.infra.services.user import UserService
 
 user_api = APIRouter(tags=["Users"])
+USERNAME_REGEX = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{2,29}$")
 
 
 def extract_user_fields(user: User) -> dict[str, Any]:
@@ -63,27 +65,38 @@ class UserUpdateRequest(BaseModel):
     @field_validator("username")
     @classmethod
     def username_validate(cls, v: str) -> str:
-        if v and "@" in v:
-            raise ValueError("Username must not contain '@'")
-        if v and len(v) > 64:
-            raise ValueError("Username is too long")
+        if v is None:
+            return v
+        v = v.strip()
+        if not USERNAME_REGEX.match(v):
+            raise ValueError("Invalid username")
         return v
 
     @field_validator("display_name")
     @classmethod
     def display_name_validate(cls, v: str) -> str:
-        if v and not v.strip():
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
             raise ValueError("Display name cannot be empty")
-        if v and len(v) > 64:
+        if len(v) < 3:
+            raise ValueError("Display name is too short")
+        if len(v) > 64:
             raise ValueError("Display name is too long")
         return v
 
-    @field_validator("display_name")
+    @field_validator("bio")
     @classmethod
     def bio_validate(cls, v: str) -> str:
-        if v and not v.strip():
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
             raise ValueError("Bio cannot be empty")
-        if v and len(v) > 64:
+        if len(v) < 3:
+            raise ValueError("Bio is too short")
+        if len(v) > 64:
             raise ValueError("Bio is too long")
         return v
 

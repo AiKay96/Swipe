@@ -46,7 +46,7 @@ def test_should_get_user_by_mail() -> None:
     assert user.mail == fake.mail
 
 
-def test_should_not_get_unknown_user_by_mail() -> None:
+def test_should_not_get_unknown_user_by() -> None:
     repo = Mock()
     repo.read_by.return_value = None
 
@@ -54,3 +54,62 @@ def test_should_not_get_unknown_user_by_mail() -> None:
 
     with pytest.raises(DoesNotExistError):
         service.get_by_mail(FakeUser().mail)
+
+
+def test_should_get_user_by_username() -> None:
+    repo = Mock()
+    fake = FakeUser()
+    repo.find_by_username.return_value = fake.as_user()
+
+    service = UserService(repo)
+
+    user = service.get_by_username(fake.username)
+    assert user.username == fake.username
+
+
+def test_should_not_get_unknown_user_by_username() -> None:
+    repo = Mock()
+    repo.find_by_username.return_value = None
+
+    service = UserService(repo)
+
+    with pytest.raises(DoesNotExistError):
+        service.get_by_username(FakeUser().username)
+
+
+def test_should_update_user_fields() -> None:
+    repo = Mock()
+    user = FakeUser()
+    repo.find_by_username.return_value = None
+
+    service = UserService(repo)
+    update_user = FakeUser()
+
+    service.update_user(
+        user.id,
+        username=update_user.username,
+        display_name=update_user.display_name,
+        bio=update_user.bio,
+    )
+
+    repo.update.assert_called_once_with(
+        user.id,
+        {
+            "username": update_user.username,
+            "display_name": update_user.display_name,
+            "bio": update_user.bio,
+        },
+    )
+
+
+def test_should_not_update_to_existing_username() -> None:
+    repo = Mock()
+    existing_user = FakeUser().as_user()
+    new_user = FakeUser().as_user()
+
+    repo.find_by_username.return_value = existing_user
+
+    service = UserService(repo)
+
+    with pytest.raises(ExistsError):
+        service.update_user(new_user.id, username=existing_user.username)

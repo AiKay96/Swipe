@@ -1,5 +1,8 @@
+import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
+from src.infra.fastapi.users import UserUpdateRequest
 from tests.fake import FakeUser
 
 
@@ -64,3 +67,138 @@ def test_should_get_me(client: TestClient) -> None:
     assert user["username"] == username
     assert user["mail"] == fake.mail
     assert "password" not in user
+
+
+def test_should_update_me(client: TestClient) -> None:
+    fake = FakeUser()
+    response = client.post("/users", json=fake.as_create_dict())
+    assert response.status_code == 201
+
+    username = response.json()["user"]["username"]
+    login_response = client.post(
+        "/auth", data={"username": username, "password": fake.password}
+    )
+    assert login_response.status_code == 200
+    token = login_response.json()["access_token"]
+
+    update_user = FakeUser()
+    update_data = {"display_name": update_user.display_name, "bio": update_user.bio}
+    response = client.patch(
+        "/me",
+        headers={"Authorization": f"Bearer {token}"},
+        json=update_data,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["message"] == "User updated successfully."
+
+
+def test_should_not_update_to_existing_username(client: TestClient) -> None:
+    user1 = FakeUser()
+    user2 = FakeUser()
+
+    r1 = client.post("/users", json=user1.as_create_dict())
+    r2 = client.post("/users", json=user2.as_create_dict())
+    assert r1.status_code == 201
+    assert r2.status_code == 201
+
+    username1 = r1.json()["user"]["username"]
+    username2 = r2.json()["user"]["username"]
+
+    login_response = client.post(
+        "/auth", data={"username": username1, "password": user1.password}
+    )
+    token = login_response.json()["access_token"]
+
+    response = client.patch(
+        "/me",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"username": username2},
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {"message": "Username already taken."}
+
+
+def test_should_update_username_only(client: TestClient) -> None:
+    fake = FakeUser()
+    response = client.post("/users", json=fake.as_create_dict())
+    assert response.status_code == 201
+    old_username = response.json()["user"]["username"]
+
+    login_response = client.post(
+        "/auth", data={"username": old_username, "password": fake.password}
+    )
+    token = login_response.json()["access_token"]
+
+    new_username = FakeUser().username
+    patch_response = client.patch(
+        "/me",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"username": new_username},
+    )
+
+    assert patch_response.status_code == 200
+
+    get_response = client.get(f"/users/{new_username}")
+    assert get_response.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "username",
+    [
+        "AiKay",  # mixed case
+        "username_123",  # underscores + digits
+        "A1b2c3",  # letters and numbers
+        "A" * 30,  # max length
+    ],
+)
+def test_should_update_valid_usernames(username: str) -> None:
+    req = UserUpdateRequest(username=username)
+    assert req.username == username
+
+
+@pytest.mark.parametrize(
+    "username",
+    [
+        "1username",  # starts with digit
+        "_username",  # starts with underscore
+        "a",  # too short
+        "a@b",  # invalid character
+        "a.b",  # dot not allowed
+        "a-b",  # dash not allowed
+        "a b",  # space not allowed
+        "A" * 31,  # too long
+    ],
+)
+def test_should_not_update_invalid_usernames(username: str) -> None:
+    with pytest.raises(ValidationError):
+        UserUpdateRequest(username=username)
+
+
+@pytest.mark.parametrize(
+    "display_name",
+    [
+        "",  # empty
+        "  ",  # spaces only
+        "ab",  # too short
+        "A" * 65,  # too long
+    ],
+)
+def test_should_not_update_invalid_display_names(display_name: str) -> None:
+    with pytest.raises(ValidationError):
+        UserUpdateRequest(display_name=display_name)
+
+
+@pytest.mark.parametrize(
+    "bio",
+    [
+        "",  # empty
+        " ",  # spaces only
+        "a",  # too short
+        "A" * 65,  # too long
+    ],
+)
+def test_invalid_bios(bio: str) -> None:
+    with pytest.raises(ValidationError):
+        UserUpdateRequest(bio=bio)

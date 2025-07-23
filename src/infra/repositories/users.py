@@ -60,7 +60,7 @@ class UserRepository:
             return None
         return user.to_object()
 
-    def update(self, user_id: str, updates: dict[str, Any]) -> None:
+    def update(self, user_id: UUID, updates: dict[str, Any]) -> None:
         user = self.db.query(UserModel).filter_by(id=user_id).first()
         if not user:
             raise DoesNotExistError("User not found.")

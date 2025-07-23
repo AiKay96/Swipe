@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Any
+from uuid import UUID
 
 from faker import Faker
 
@@ -15,6 +16,7 @@ class FakeUser:
     username: str = field(default_factory=lambda: _faker.unique.user_name())
     display_name: str = field(default_factory=lambda: _faker.unique.name())
     bio: str = field(default_factory=lambda: _faker.sentence(nb_words=10))
+    id: UUID = field(default_factory=lambda: UUID(_faker.uuid4()))
 
     def as_dict(self) -> dict[str, Any]:
         return {
