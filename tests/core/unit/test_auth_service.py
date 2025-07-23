@@ -16,10 +16,10 @@ def test_should_decode_valid_access_token() -> None:
     service = AuthService(repo)
 
     user = FakeUser()
-    token = service.create_access_token(user.username)
-    username = service.decode_token(token)
+    token = service.create_access_token(str(user.id))
+    user_id = service.decode_token(token)
 
-    assert username == user.username
+    assert user_id == str(user.id)
 
 
 def test_should_fail_on_invalid_token() -> None:
@@ -34,7 +34,7 @@ def test_should_fail_on_token_type_mismatch() -> None:
     repo = FakeRepo([])
     service = AuthService(repo)
 
-    token = service.create_refresh_token(FakeUser().username)
+    token = service.create_refresh_token(str(FakeUser().id))
 
     with pytest.raises(DoesNotExistError):
         service.decode_token(token, expected_type="access")
@@ -64,7 +64,7 @@ def test_should_fail_auth_on_wrong_password() -> None:
     service = AuthService(repo)
 
     with pytest.raises(DoesNotExistError):
-        service.authenticate(user.username, FakeUser().username)
+        service.authenticate(user.username, "wrong-password")
 
 
 def test_should_get_user_from_valid_token() -> None:
@@ -72,7 +72,7 @@ def test_should_get_user_from_valid_token() -> None:
     repo = FakeRepo([user])
     service = AuthService(repo)
 
-    token = service.create_access_token(user.username)
+    token = service.create_access_token(str(user.id))
     result = service.get_user_from_token(token)
 
     assert result.username == user.username
@@ -82,7 +82,7 @@ def test_should_fail_get_user_from_token_when_user_missing() -> None:
     repo = FakeRepo([])
     service = AuthService(repo)
 
-    token = service.create_access_token(FakeUser().username)
+    token = service.create_access_token(str(FakeUser().id))
 
     with pytest.raises(DoesNotExistError):
         service.get_user_from_token(token)
@@ -93,7 +93,7 @@ def test_should_refresh_access_token() -> None:
     repo = FakeRepo([user])
     service = AuthService(repo)
 
-    refresh = service.create_refresh_token(user.username)
+    refresh = service.create_refresh_token(str(user.id))
     access = service.refresh_access_token(refresh)
 
     assert isinstance(access, str)
@@ -112,10 +112,13 @@ class FakeRepo:
     def read_by(
         self,
         *,
-        user_id: UUID | None = None,  # noqa ARG002
+        user_id: UUID | None = None,
         mail: str | None = None,  # noqa ARG002
         username: str | None = None,  # noqa ARG002
     ) -> User | None:
+        for u in self.users:
+            if user_id and u.id == user_id:
+                return u
         return None
 
     def create(self, user: User) -> User:

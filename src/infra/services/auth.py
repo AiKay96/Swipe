@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from uuid import UUID
 
 import bcrypt
 from jose import JWTError, jwt
@@ -13,9 +14,9 @@ from src.runner.config import settings
 class AuthService:
     users: UserRepository
 
-    def create_access_token(self, username: str) -> str:
+    def create_access_token(self, user_id: str) -> str:
         payload = {
-            "sub": username,
+            "sub": user_id,
             "type": "access",
             "exp": datetime.utcnow()
             + timedelta(minutes=settings.access_token_expire_minutes),
@@ -24,9 +25,9 @@ class AuthService:
             jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
         )
 
-    def create_refresh_token(self, username: str) -> str:
+    def create_refresh_token(self, user_id: str) -> str:
         payload = {
-            "sub": username,
+            "sub": user_id,
             "type": "refresh",
             "exp": datetime.utcnow()
             + timedelta(days=settings.reftesh_token_expire_days),
@@ -41,8 +42,8 @@ class AuthService:
             raise DoesNotExistError("Invalid credentials")
 
         return (
-            self.create_access_token(user.username),
-            self.create_refresh_token(user.username),
+            self.create_access_token(str(user.id)),
+            self.create_refresh_token(str(user.id)),
         )
 
     def decode_token(self, token: str, expected_type: str = "access") -> str:
@@ -57,12 +58,12 @@ class AuthService:
             raise DoesNotExistError("Invalid or expired token") from err
 
     def get_user_from_token(self, token: str) -> User:
-        username = self.decode_token(token, expected_type="access")
-        user = self.users.find_by_username(username)
+        user_id = self.decode_token(token, expected_type="access")
+        user = self.users.read_by(user_id=UUID(user_id))
         if not user:
             raise DoesNotExistError("User not found")
         return user
 
     def refresh_access_token(self, refresh_token: str) -> str:
-        username = self.decode_token(refresh_token, expected_type="refresh")
-        return self.create_access_token(username)
+        user_id = self.decode_token(refresh_token, expected_type="refresh")
+        return self.create_access_token(user_id)
