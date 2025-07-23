@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID, uuid4
 
 
@@ -21,5 +21,11 @@ class UserRepository(Protocol):
     def read_by_mail(self, mail: str) -> User | None:
         pass
 
+    def read_by_id(self, user_id: str) -> None:
+        pass
+
     def read_by_username(self, username: str) -> User | None:
+        pass
+
+    def update(self, user_id: str, updates: dict[str, Any]) -> None:
         pass

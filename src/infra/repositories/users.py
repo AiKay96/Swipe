@@ -1,10 +1,11 @@
 from dataclasses import dataclass
+from typing import Any
 
 import bcrypt
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.core.errors import ExistsError
+from src.core.errors import DoesNotExistError, ExistsError
 from src.core.users import User
 from src.infra.models.user import User as UserModel
 from src.infra.models.user import User as UserORM
@@ -44,6 +45,20 @@ class UserRepository:
             bio=user.bio,
         )
 
+    def read_by_id(self, user_id: str) -> User | None:
+        user = self.db.query(UserModel).filter_by(id=user_id).first()
+        if not user:
+            return None
+
+        return User(
+            id=user.id,
+            mail=user.mail,
+            password=user.hashed_password,
+            username=user.username,
+            display_name=user.display_name,
+            bio=user.bio,
+        )
+
     def read_by_username(self, username: str) -> User | None:
         stmt = select(UserORM).where(UserORM.username.ilike(username))
         user = self.db.scalar(stmt)
@@ -57,3 +72,14 @@ class UserRepository:
             display_name=user.display_name,
             bio=user.bio,
         )
+
+    def update(self, user_id: str, updates: dict[str, Any]) -> None:
+        user = self.db.query(UserModel).filter_by(id=user_id).first()
+        if not user:
+            raise DoesNotExistError("User not found.")
+
+        for field, value in updates.items():
+            setattr(user, field, value)
+
+        self.db.commit()
+        self.db.refresh(user)

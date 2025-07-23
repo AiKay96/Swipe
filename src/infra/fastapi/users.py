@@ -1,7 +1,7 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from starlette.responses import JSONResponse
 
 from src.core.errors import DoesNotExistError, ExistsError
@@ -55,6 +55,39 @@ class MeItemEnvelope(BaseModel):
     user: MeItem
 
 
+class UserUpdateRequest(BaseModel):
+    username: str | None = None
+    display_name: str | None = None
+    bio: str | None = None
+
+    @validator("username")
+    @classmethod
+    def username_validate(cls, v: str) -> str:
+        if v and "@" in v:
+            raise ValueError("Username must not contain '@'")
+        if v and len(v) > 64:
+            raise ValueError("Username is too long")
+        return v
+
+    @validator("display_name")
+    @classmethod
+    def display_name_validate(cls, v: str) -> str:
+        if v and not v.strip():
+            raise ValueError("Display name cannot be empty")
+        if v and len(v) > 64:
+            raise ValueError("Display name is too long")
+        return v
+
+    @validator("display_name")
+    @classmethod
+    def bio_validate(cls, v: str) -> str:
+        if v and not v.strip():
+            raise ValueError("Bio cannot be empty")
+        if v and len(v) > 64:
+            raise ValueError("Bio is too long")
+        return v
+
+
 @user_api.post(
     "/users",
     status_code=201,
@@ -100,3 +133,39 @@ def get_user(
 )
 def get_me(user: User = Depends(get_current_user)) -> dict[str, Any]:  # noqa: B008
     return {"user": extract_me_fields(user)}
+
+
+@user_api.patch(
+    "/me",
+    status_code=200,
+    response_model=MeItemEnvelope,
+)
+def patch_me(
+    request: UserUpdateRequest,
+    users: UserRepositoryDependable,
+    current_user: User = Depends(get_current_user),  # noqa: B008
+) -> JSONResponse:
+    service = UserService(users)
+    try:
+        service.update_user(
+            user_id=current_user.id,
+            **request.model_dump(exclude_unset=True, exclude_none=True),
+        )
+        return JSONResponse(
+            status_code=200, content={"message": "User updated successfully."}
+        )
+    except DoesNotExistError:
+        return JSONResponse(
+            status_code=404,
+            content={"message": "User not found."},
+        )
+    except ExistsError:
+        return JSONResponse(
+            status_code=409,
+            content={"message": "Username already taken."},
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=409,
+            content={"message": str(e)},
+        )

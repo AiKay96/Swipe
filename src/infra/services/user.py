@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from uuid import UUID
 
 from faker import Faker
 
@@ -37,6 +38,26 @@ class UserService:
         if not user:
             raise DoesNotExistError
         return user
+
+    def update_user(
+        self,
+        user_id: UUID,
+        username: str | None = None,
+        display_name: str | None = None,
+        bio: str | None = None,
+    ) -> None:
+        updates = {}
+        if username:
+            existing = self.repo.read_by_username(username)
+            if existing and existing.id != user_id:
+                raise ExistsError
+            updates["username"] = username
+        if display_name:
+            updates["display_name"] = display_name
+        if bio:
+            updates["bio"] = bio
+
+        self.repo.update(str(user_id), updates)
 
     def generate_unique_username(self) -> str:
         faker = Faker()
