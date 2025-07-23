@@ -8,6 +8,7 @@ from starlette.responses import JSONResponse
 from src.core.errors import DoesNotExistError
 from src.core.users import User
 from src.infra.fastapi.dependables import (
+    TokenRepositoryDependable,
     UserRepositoryDependable,
     get_current_user,
     get_refresh_token,
@@ -35,9 +36,10 @@ class AccessTokenResponse(BaseModel):
 def login(
     response: Response,
     users: UserRepositoryDependable,
+    tokens: TokenRepositoryDependable,
     form_data: OAuth2PasswordRequestForm = Depends(),  # noqa: B008
 ) -> dict[str, str] | JSONResponse:
-    auth = AuthService(users)
+    auth = AuthService(users, tokens)
     try:
         access_token, refresh_token = auth.authenticate(
             form_data.username, form_data.password
@@ -64,8 +66,19 @@ def login(
 )
 def logout(
     response: Response,
+    users: UserRepositoryDependable,
+    tokens: TokenRepositoryDependable,
+    token: str = Depends(get_refresh_token),
     _: User = Depends(get_current_user),  # noqa: B008
 ) -> JSONResponse:
+    auth = AuthService(users, tokens)
+    try:
+        auth.logout(token)
+    except Exception as e:
+        return JSONResponse(
+            status_code=401,
+            content={"message": str(e)},
+        )
     response.delete_cookie("refresh_token", httponly=True)
     return JSONResponse(
         status_code=200,
@@ -80,10 +93,11 @@ def logout(
 )
 def refresh_token(
     users: UserRepositoryDependable,
+    tokens: TokenRepositoryDependable,
     token: str = Depends(get_refresh_token),
     _: User = Depends(get_current_user),  # noqa: B008
 ) -> dict[str, Any] | JSONResponse:
-    auth = AuthService(users)
+    auth = AuthService(users, tokens)
     try:
         new_access_token = auth.refresh_access_token(token)
         return {"access_token": new_access_token}

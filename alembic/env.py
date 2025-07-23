@@ -8,6 +8,7 @@ from src.runner.db import Base
 
 from src.runner.config import settings
 from src.infra.models.user import User
+from src.infra.models.token import Token
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

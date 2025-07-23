@@ -7,7 +7,7 @@ from tests.fake import FakeUser
 BASE_URL = settings.base_url
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def test_user() -> dict[str, str]:
     user = FakeUser()
     create = requests.post(f"{BASE_URL}/users", json=user.as_create_dict())

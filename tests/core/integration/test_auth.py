@@ -150,11 +150,19 @@ def test_should_logout_and_clear_cookie(client: TestClient) -> None:
     assert login_response.status_code == 200
     assert "refresh_token" in login_response.cookies
 
+    refresh_token = login_response.cookies["refresh_token"]
     access_token = login_response.json()["access_token"]
     headers = {"Authorization": f"Bearer {access_token}"}
 
+    client.cookies.set("refresh_token", refresh_token)
     logout_response = client.post("/logout", headers=headers)
 
     assert logout_response.status_code == 200
     assert logout_response.cookies.get("refresh_token") is None
     assert logout_response.json()["message"] == "Logged out successfully."
+
+    client.cookies.set("refresh_token", refresh_token)
+    refresh_attempt = client.post("/refresh", headers=headers)
+
+    assert refresh_attempt.status_code == 401
+    assert refresh_attempt.json() == {"message": "Refresh token not recognized"}

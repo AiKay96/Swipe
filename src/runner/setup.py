@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from src.infra.fastapi.auth import auth_api
 from src.infra.fastapi.users import user_api
+from src.infra.repositories.tokens import TokenRepository
 from src.infra.repositories.users import UserRepository
 from src.runner.config import settings
 from src.runner.db import Base
@@ -31,5 +32,6 @@ def init_app() -> FastAPI:
 
     db: Session = next(get_db())
     app.state.users = UserRepository(db)
+    app.state.tokens = TokenRepository(db)
 
     return app

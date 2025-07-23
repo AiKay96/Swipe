@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from src.infra.fastapi.auth import auth_api
 from src.infra.fastapi.users import user_api
+from src.infra.repositories.tokens import TokenRepository
 from src.infra.repositories.users import UserRepository
 from src.runner.db import Base
 from src.runner.setup import get_db
@@ -49,5 +50,6 @@ def client(db_session: Session) -> TestClient:
     app.include_router(auth_api)
     app.dependency_overrides[get_db] = lambda: db_session
     app.state.users = UserRepository(db_session)
+    app.state.tokens = TokenRepository(db_session)
 
     return TestClient(app)
