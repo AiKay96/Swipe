@@ -9,10 +9,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.runner.db import Base
 
 if TYPE_CHECKING:
-    from .personal_post import PersonalPost
+    from .post import Post
 
 
-class PostMedia(Base):
+class Media(Base):
     __tablename__ = "post_media"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
@@ -20,4 +20,4 @@ class PostMedia(Base):
     url: Mapped[str] = mapped_column(String)
     post_type: Mapped[str] = mapped_column(String)  # "image" or "video"
 
-    post: Mapped[PersonalPost] = relationship(back_populates="media")
+    post: Mapped[Post] = relationship(back_populates="media")

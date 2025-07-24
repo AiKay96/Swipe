@@ -4,15 +4,15 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from src.core.errors import DoesNotExistError
-from src.core.post.personal_posts import PersonalPost
-from src.infra.models.post.personal_post import PersonalPost as PersonalPostModel
+from src.core.personal_post.posts import Post
+from src.infra.models.personal_post.post import Post as PersonalPostModel
 
 
 @dataclass
-class PersonalPostRepository:
+class PostRepository:
     db: Session
 
-    def create(self, post: PersonalPost) -> PersonalPost:
+    def create(self, post: Post) -> Post:
         db_post = PersonalPostModel(
             user_id=post.user_id,
             description=post.description,
@@ -24,11 +24,11 @@ class PersonalPostRepository:
         self.db.refresh(db_post)
         return db_post.to_object()
 
-    def get_by_id(self, post_id: UUID) -> PersonalPost | None:
+    def get_by_id(self, post_id: UUID) -> Post | None:
         db_post = self.db.query(PersonalPostModel).filter_by(id=post_id).first()
         return db_post.to_object() if db_post else None
 
-    def list_by_user(self, user_id: UUID) -> list[PersonalPost]:
+    def list_by_user(self, user_id: UUID) -> list[Post]:
         return [
             db_post.to_object()
             for db_post in self.db.query(PersonalPostModel)

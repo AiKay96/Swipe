@@ -4,17 +4,17 @@ from uuid import UUID, uuid4
 
 
 @dataclass
-class PersonalPostLike:
+class Like:
     post_id: UUID
     user_id: UUID
     is_dislike: bool = False
     id: UUID = field(default_factory=uuid4)
 
 
-class PersonalPostLikeRepository(Protocol):
-    def create(self, like: PersonalPostLike) -> PersonalPostLike: ...
+class LikeRepository(Protocol):
+    def create(self, like: Like) -> Like: ...
     def get_by_user_and_post(
         self, user_id: UUID, post_id: UUID
-    ) -> PersonalPostLike | None: ...
+    ) -> Like | None: ...
     def update(self, like_id: UUID, is_dislike: bool) -> None: ...
     def delete(self, like_id: UUID) -> None: ...

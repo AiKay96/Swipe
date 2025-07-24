@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 
 @dataclass
-class PersonalPost:
+class Post:
     user_id: UUID
     description: str = ""
     like_count: int = 0
@@ -14,10 +14,10 @@ class PersonalPost:
     id: UUID = field(default_factory=uuid4)
 
 
-class PersonalPostRepository(Protocol):
-    def create(self, post: PersonalPost) -> PersonalPost: ...
-    def get_by_id(self, post_id: UUID) -> PersonalPost | None: ...
-    def list_by_user(self, user_id: UUID) -> list[PersonalPost]: ...
+class PostRepository(Protocol):
+    def create(self, post: Post) -> Post: ...
+    def get_by_id(self, post_id: UUID) -> Post | None: ...
+    def list_by_user(self, user_id: UUID) -> list[Post]: ...
     def update_like_counts(
         self, post_id: UUID, like_count: int, dislike_count: int
     ) -> None: ...

@@ -4,12 +4,12 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from src.core.errors import DoesNotExistError
-from src.core.post.personal_post_like import PersonalPostLike
-from src.infra.models.post.post_like import PostLike as PersonalPostLikeModel
+from src.core.personal_post.personal_post_like import PersonalPostLike
+from src.infra.models.personal_post.like import Like as PersonalPostLikeModel
 
 
 @dataclass
-class PersonalPostLikeRepository:
+class LikeRepository:
     db: Session
 
     def create(self, like: PersonalPostLike) -> PersonalPostLike:

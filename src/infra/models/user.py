@@ -10,9 +10,9 @@ from src.core.users import User as DomainUser
 from src.runner.db import Base
 
 if TYPE_CHECKING:
-    from .post.personal_post import PersonalPost
-    from .post.post_comment import PostPersonalPostComment
-    from .post.post_like import PostLike
+    from .personal_post.post import Post
+    from .personal_post.comment import Comment
+    from .personal_post.like import Like
 
 
 class User(Base):
@@ -26,13 +26,13 @@ class User(Base):
     display_name: Mapped[str] = mapped_column(String)
     bio: Mapped[str | None] = mapped_column(String)
 
-    personal_posts: Mapped[list[PersonalPost]] = relationship(
+    personal_posts: Mapped[list[Post]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
-    post_likes: Mapped[list[PostLike]] = relationship(
+    post_likes: Mapped[list[Like]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
-    post_comments: Mapped[list[PostPersonalPostComment]] = relationship(
+    post_comments: Mapped[list[Comment]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
 

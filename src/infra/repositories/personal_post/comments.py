@@ -4,17 +4,17 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from src.core.errors import DoesNotExistError
-from src.core.post.personal_post_comments import PersonalPostComment
-from src.infra.models.post.post_comment import (
-    PostPersonalPostComment as PersonalPostCommentModel,
+from src.core.personal_post.comments import Comment
+from src.infra.models.personal_post.comment import (
+    Comment as PersonalPostCommentModel,
 )
 
 
 @dataclass
-class PersonalPostCommentRepository:
+class CommentRepository:
     db: Session
 
-    def create(self, comment: PersonalPostComment) -> PersonalPostComment:
+    def create(self, comment: Comment) -> Comment:
         db_comment = PersonalPostCommentModel(
             post_id=comment.post_id,
             user_id=comment.user_id,
@@ -25,7 +25,7 @@ class PersonalPostCommentRepository:
         self.db.refresh(db_comment)
         return db_comment.to_object()
 
-    def get_by_post(self, post_id: UUID) -> list[PersonalPostComment]:
+    def get_by_post(self, post_id: UUID) -> list[Comment]:
         comments = (
             self.db.query(PersonalPostCommentModel).filter_by(post_id=post_id).all()
         )

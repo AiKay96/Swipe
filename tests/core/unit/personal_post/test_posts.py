@@ -5,9 +5,9 @@ from uuid import UUID, uuid4
 import pytest
 
 from src.core.errors import DoesNotExistError
-from src.infra.repositories.post.personal_posts import PersonalPostRepository
+from src.infra.repositories.personal_post.posts import PostRepository
 from src.infra.repositories.users import UserRepository
-from tests.fake import FakePost, FakeUser
+from tests.fake import FakePersonalPost, FakeUser
 
 
 @pytest.fixture
@@ -20,8 +20,8 @@ def test_user_id(db_session: Any) -> UUID:
 
 
 def test_should_create_post(db_session: Any, test_user_id: UUID) -> None:
-    repo = PersonalPostRepository(db_session)
-    post = replace(FakePost(), user_id=test_user_id).as_post()
+    repo = PostRepository(db_session)
+    post = replace(FakePersonalPost(), user_id=test_user_id).as_post()
 
     created = repo.create(post)
 
@@ -29,8 +29,8 @@ def test_should_create_post(db_session: Any, test_user_id: UUID) -> None:
 
 
 def test_should_get_post_by_id(db_session: Any, test_user_id: UUID) -> None:
-    repo = PersonalPostRepository(db_session)
-    post = replace(FakePost(), user_id=test_user_id).as_post()
+    repo = PostRepository(db_session)
+    post = replace(FakePersonalPost(), user_id=test_user_id).as_post()
 
     created = repo.create(post)
     fetched = repo.get_by_id(created.id)
@@ -40,10 +40,10 @@ def test_should_get_post_by_id(db_session: Any, test_user_id: UUID) -> None:
 
 
 def test_should_list_posts_by_user(db_session: Any, test_user_id: UUID) -> None:
-    repo = PersonalPostRepository(db_session)
+    repo = PostRepository(db_session)
 
     for _ in range(3):
-        post = replace(FakePost(), user_id=test_user_id).as_post()
+        post = replace(FakePersonalPost(), user_id=test_user_id).as_post()
         repo.create(post)
 
     result = repo.list_by_user(test_user_id)
@@ -52,8 +52,8 @@ def test_should_list_posts_by_user(db_session: Any, test_user_id: UUID) -> None:
 
 
 def test_should_update_like_counts(db_session: Any, test_user_id: UUID) -> None:
-    repo = PersonalPostRepository(db_session)
-    post = replace(FakePost(), user_id=test_user_id).as_post()
+    repo = PostRepository(db_session)
+    post = replace(FakePersonalPost(), user_id=test_user_id).as_post()
 
     created = repo.create(post)
     repo.update_like_counts(created.id, like_count=10, dislike_count=2)
@@ -65,8 +65,8 @@ def test_should_update_like_counts(db_session: Any, test_user_id: UUID) -> None:
 
 
 def test_should_delete_post(db_session: Any, test_user_id: UUID) -> None:
-    repo = PersonalPostRepository(db_session)
-    post = replace(FakePost(), user_id=test_user_id).as_post()
+    repo = PostRepository(db_session)
+    post = replace(FakePersonalPost(), user_id=test_user_id).as_post()
 
     created = repo.create(post)
     repo.delete(created.id)
@@ -75,7 +75,7 @@ def test_should_delete_post(db_session: Any, test_user_id: UUID) -> None:
 
 
 def test_should_fail_delete_unknown(db_session: Any) -> None:
-    repo = PersonalPostRepository(db_session)
+    repo = PostRepository(db_session)
 
     with pytest.raises(DoesNotExistError):
         repo.delete(uuid4())

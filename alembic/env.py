@@ -11,10 +11,10 @@ from src.infra.models.user import User
 from src.infra.models.token import Token
 from src.infra.models.user import User
 from src.infra.models.token import Token
-from src.infra.models.post.personal_post import PersonalPost
-from src.infra.models.post.post_comment import PostPersonalPostComment
-from src.infra.models.post.post_like import PostLike
-from src.infra.models.post.post_media import PostMedia
+from src.infra.models.personal_post.post import Post
+from src.infra.models.personal_post.comment import Comment
+from src.infra.models.personal_post.like import Like
+from src.infra.models.personal_post.media import Media
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -5,8 +5,8 @@ from uuid import UUID, uuid4
 
 from faker import Faker
 
-from src.core.post.personal_post_comments import PersonalPostComment
-from src.core.post.personal_posts import PersonalPost
+from src.core.personal_post.comments import Comment
+from src.core.personal_post.posts import Post
 from src.core.users import User
 
 _faker = Faker()
@@ -47,7 +47,7 @@ class FakeUser:
 
 
 @dataclass(frozen=True)
-class FakePost:
+class FakePersonalPost:
     user_id: UUID = field(default_factory=uuid4)
     description: str = field(default_factory=lambda: _faker.sentence(nb_words=6))
     like_count: int = 0
@@ -55,8 +55,8 @@ class FakePost:
     created_at: datetime = field(default_factory=datetime.utcnow)
     id: UUID = field(default_factory=uuid4)
 
-    def as_post(self) -> PersonalPost:
-        return PersonalPost(
+    def as_post(self) -> Post:
+        return Post(
             id=self.id,
             user_id=self.user_id,
             description=self.description,
@@ -73,8 +73,8 @@ class FakePersonalPostComment:
     content: str = field(default_factory=lambda: _faker.sentence(nb_words=8))
     id: UUID = field(default_factory=uuid4)
 
-    def as_comment(self) -> PersonalPostComment:
-        return PersonalPostComment(
+    def as_comment(self) -> Comment:
+        return Comment(
             id=self.id,
             post_id=self.post_id,
             user_id=self.user_id,

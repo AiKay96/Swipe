@@ -7,18 +7,18 @@ from uuid import UUID, uuid4
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.core.post.personal_posts import PersonalPost as DomainPost
+from src.core.personal_post.posts import Post as DomainPost
 from src.runner.db import Base
 
 if TYPE_CHECKING:
     from src.infra.models.user import User
 
-    from .post_comment import PostPersonalPostComment
-    from .post_like import PostLike
-    from .post_media import PostMedia
+    from .comment import Comment
+    from .like import Like
+    from .media import Media
 
 
-class PersonalPost(Base):
+class Post(Base):
     __tablename__ = "personal_posts"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
@@ -30,13 +30,13 @@ class PersonalPost(Base):
     dislike_count: Mapped[int] = mapped_column(Integer, default=0)
 
     user: Mapped[User] = relationship(back_populates="personal_posts")
-    media: Mapped[list[PostMedia]] = relationship(
+    media: Mapped[list[Media]] = relationship(
         back_populates="post", cascade="all, delete-orphan"
     )
-    comments: Mapped[list[PostPersonalPostComment]] = relationship(
+    comments: Mapped[list[Comment]] = relationship(
         back_populates="post", cascade="all, delete-orphan"
     )
-    reactions: Mapped[list[PostLike]] = relationship(
+    reactions: Mapped[list[Like]] = relationship(
         back_populates="post", cascade="all, delete-orphan"
     )
 
