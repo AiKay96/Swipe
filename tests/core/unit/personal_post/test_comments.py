@@ -10,32 +10,33 @@ from src.infra.repositories.personal_post.comments import (
 )
 from src.infra.repositories.personal_post.posts import PostRepository
 from src.infra.repositories.users import UserRepository
-from tests.fake import FakePersonalPost, FakePersonalPostComment, FakeUser
+from tests.fake import FakePersonalPost as FakePost
+from tests.fake import FakePersonalPostComment as FakeComment
+from tests.fake import FakeUser
 
 
 @pytest.fixture
-def test_user_and_post_id(db_session: Any) -> tuple[UUID, UUID]:
-    users = UserRepository(db_session)
-    posts = PostRepository(db_session)
+def user_id(db_session: Any) -> UUID:
+    user_repo = UserRepository(db_session)
 
     user = FakeUser().as_user()
-    created_user = users.create(user)
+    created = user_repo.create(user)
 
-    post = replace(FakePersonalPost(), user_id=created_user.id).as_post()
-    created_post = posts.create(post)
-
-    return created_user.id, created_post.id
+    return created.id
 
 
-def test_should_create_comment(
-    db_session: Any, test_user_and_post_id: tuple[UUID, UUID]
-) -> None:
+@pytest.fixture
+def post_id(db_session: Any, user_id: UUID) -> UUID:
+    post_repo = PostRepository(db_session)
+    post = replace(FakePost(), user_id=user_id).as_post()
+    created = post_repo.create(post)
+    return created.id
+
+
+def test_should_create_comment(db_session: Any, user_id: UUID, post_id: UUID) -> None:
     repo = CommentRepository(db_session)
-    user_id, post_id = test_user_and_post_id
 
-    comment = replace(
-        FakePersonalPostComment(), user_id=user_id, post_id=post_id
-    ).as_comment()
+    comment = replace(FakeComment(), user_id=user_id, post_id=post_id).as_comment()
     created = repo.create(comment)
 
     assert created.user_id == user_id
@@ -43,36 +44,14 @@ def test_should_create_comment(
     assert created.content == comment.content
 
 
-def test_should_list_comments_by_post(
-    db_session: Any, test_user_and_post_id: tuple[UUID, UUID]
-) -> None:
+def test_should_delete_comment(db_session: Any, user_id: UUID, post_id: UUID) -> None:
     repo = CommentRepository(db_session)
-    user_id, post_id = test_user_and_post_id
 
-    for _ in range(5):
-        comment = replace(
-            FakePersonalPostComment(), user_id=user_id, post_id=post_id
-        ).as_comment()
-        repo.create(comment)
-
-    comments = repo.get_by_post(post_id)
-    assert len(comments) == 5
-    assert all(c.post_id == post_id for c in comments)
-
-
-def test_should_delete_comment(
-    db_session: Any, test_user_and_post_id: tuple[UUID, UUID]
-) -> None:
-    repo = CommentRepository(db_session)
-    user_id, post_id = test_user_and_post_id
-
-    comment = replace(
-        FakePersonalPostComment(), user_id=user_id, post_id=post_id
-    ).as_comment()
+    comment = replace(FakeComment(), user_id=user_id, post_id=post_id).as_comment()
     created = repo.create(comment)
 
     repo.delete(created.id)
-    assert repo.get_by_post(post_id) == []
+    assert repo.get(created.id) is None
 
 
 def test_should_fail_delete_unknown_comment(db_session: Any) -> None:

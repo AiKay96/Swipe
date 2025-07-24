@@ -55,6 +55,8 @@ class FakePersonalPost:
     like_count: int = 0
     dislike_count: int = 0
     created_at: datetime = field(default_factory=datetime.utcnow)
+    media: list[Media] = field(default_factory=list)
+    comments: list[PersonalPostComment] = field(default_factory=list)
     id: UUID = field(default_factory=uuid4)
 
     def as_post(self) -> PersonalPost:
@@ -65,6 +67,8 @@ class FakePersonalPost:
             like_count=self.like_count,
             dislike_count=self.dislike_count,
             created_at=self.created_at,
+            media=self.media,
+            comments=self.comments,
         )
 
 

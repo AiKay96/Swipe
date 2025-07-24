@@ -24,10 +24,10 @@ class Media(Base):
 
     post: Mapped[Post] = relationship(back_populates="media")
 
-    def __init__(self, post_id: UUID, url: str, media_type: MediaType):
+    def __init__(self, post_id: UUID, url: str, media_type: str):
         self.post_id = post_id
         self.url = url
-        self.media_type = media_type.value
+        self.media_type = media_type
 
     def to_object(self) -> DomainMedia:
         return DomainMedia(

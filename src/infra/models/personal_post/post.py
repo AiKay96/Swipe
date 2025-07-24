@@ -60,4 +60,6 @@ class Post(Base):
             created_at=self.created_at,
             like_count=self.like_count,
             dislike_count=self.dislike_count,
+            media=[m.to_object() for m in self.media],
+            comments=[c.to_object() for c in self.comments],
         )

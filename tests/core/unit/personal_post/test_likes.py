@@ -14,23 +14,24 @@ from tests.fake import FakeUser
 
 
 @pytest.fixture
-def test_user_and_post(db_session: Any) -> tuple[UUID, UUID]:
+def user_id(db_session: Any) -> UUID:
     user_repo = UserRepository(db_session)
-    post_repo = PostRepository(db_session)
 
     user = FakeUser().as_user()
-    created_user = user_repo.create(user)
+    created = user_repo.create(user)
 
-    post = replace(FakePost(), user_id=created_user.id).as_post()
-    created_post = post_repo.create(post)
-
-    return created_user.id, created_post.id
+    return created.id
 
 
-def test_should_create_like(
-    db_session: Any, test_user_and_post: tuple[UUID, UUID]
-) -> None:
-    user_id, post_id = test_user_and_post
+@pytest.fixture
+def post_id(db_session: Any, user_id: UUID) -> UUID:
+    post_repo = PostRepository(db_session)
+    post = replace(FakePost(), user_id=user_id).as_post()
+    created = post_repo.create(post)
+    return created.id
+
+
+def test_should_create_like(db_session: Any, user_id: UUID, post_id: UUID) -> None:
     repo = LikeRepository(db_session)
 
     like = replace(FakeLike(), user_id=user_id, post_id=post_id).as_like()
@@ -41,49 +42,40 @@ def test_should_create_like(
     assert created.is_dislike is False
 
 
-def test_should_get_like_by_user_and_post(
-    db_session: Any, test_user_and_post: tuple[UUID, UUID]
-) -> None:
-    user_id, post_id = test_user_and_post
+def test_should_get_like(db_session: Any, user_id: UUID, post_id: UUID) -> None:
     repo = LikeRepository(db_session)
 
     like = replace(FakeLike(), user_id=user_id, post_id=post_id).as_like()
     repo.create(like)
 
-    found = repo.get_by_user_and_post(user_id, post_id)
+    found = repo.get(user_id, post_id)
 
     assert found
     assert found.user_id == user_id
     assert found.post_id == post_id
 
 
-def test_should_update_like(
-    db_session: Any, test_user_and_post: tuple[UUID, UUID]
-) -> None:
-    user_id, post_id = test_user_and_post
+def test_should_update_like(db_session: Any, user_id: UUID, post_id: UUID) -> None:
     repo = LikeRepository(db_session)
 
     like = replace(FakeLike(), user_id=user_id, post_id=post_id).as_like()
     created = repo.create(like)
 
     repo.update(created.id, is_dislike=True)
-    updated = repo.get_by_user_and_post(user_id, post_id)
+    updated = repo.get(user_id, post_id)
 
     assert updated
     assert updated.is_dislike is True
 
 
-def test_should_delete_like(
-    db_session: Any, test_user_and_post: tuple[UUID, UUID]
-) -> None:
-    user_id, post_id = test_user_and_post
+def test_should_delete_like(db_session: Any, user_id: UUID, post_id: UUID) -> None:
     repo = LikeRepository(db_session)
 
     like = replace(FakeLike(), user_id=user_id, post_id=post_id).as_like()
     created = repo.create(like)
 
     repo.delete(created.id)
-    assert repo.get_by_user_and_post(user_id, post_id) is None
+    assert repo.get(user_id, post_id) is None
 
 
 def test_should_fail_on_unknown_like_update(db_session: Any) -> None:
@@ -98,3 +90,24 @@ def test_should_fail_on_unknown_like_delete(db_session: Any) -> None:
 
     with pytest.raises(DoesNotExistError):
         repo.delete(uuid4())
+
+
+def test_should_delete_all_likes_for_post(
+    db_session: Any, user_id: UUID, post_id: UUID
+) -> None:
+    like_repo = LikeRepository(db_session)
+    user_repo = UserRepository(db_session)
+
+    user = FakeUser().as_user()
+    created = user_repo.create(user)
+
+    like1 = replace(FakeLike(), user_id=user_id, post_id=post_id).as_like()
+    like2 = replace(FakeLike(), user_id=created.id, post_id=post_id).as_like()
+
+    like_repo.create(like1)
+    like_repo.create(like2)
+
+    like_repo.delete_by_post(post_id)
+
+    assert like_repo.get(user_id, post_id) is None
+    assert like_repo.get(created.id, post_id) is None

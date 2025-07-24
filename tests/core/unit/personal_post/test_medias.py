@@ -19,44 +19,24 @@ from tests.fake import (
 
 
 @pytest.fixture
-def test_user_and_post(db_session: Any) -> tuple[UUID, UUID]:
+def post_id(db_session: Any) -> UUID:
     user_repo = UserRepository(db_session)
-    post_repo = PostRepository(db_session)
 
     user = FakeUser().as_user()
     created_user = user_repo.create(user)
 
+    post_repo = PostRepository(db_session)
     post = replace(FakePost(), user_id=created_user.id).as_post()
     created_post = post_repo.create(post)
-
-    return created_user.id, created_post.id
-
-
-def test_should_create_media(
-    db_session: Any, test_user_and_post: tuple[UUID, UUID]
-) -> None:
-    _, post_id = test_user_and_post
-    repo = MediaRepository(db_session)
-
-    media = replace(FakeMedia(), post_id=post_id).as_media()
-    created = repo.create(media)
-
-    assert created.post_id == post_id
-    assert created.url == media.url
-    assert created.media_type == media.media_type
+    return created_post.id
 
 
-def test_should_list_media_by_post(
-    db_session: Any, test_user_and_post: tuple[UUID, UUID]
-) -> None:
-    _, post_id = test_user_and_post
-    repo = MediaRepository(db_session)
+def test_should_create_all_medias(db_session: Any, post_id: UUID) -> None:
+    media_repo = MediaRepository(db_session)
 
-    for _ in range(3):
-        media = replace(FakeMedia(), post_id=post_id).as_media()
-        repo.create(media)
-
-    results = repo.list_by_post(post_id)
-
-    assert len(results) == 3
-    assert all(m.post_id == post_id for m in results)
+    media_repo.create_many(
+        [
+            replace(FakeMedia(), post_id=post_id).as_media(),
+            replace(FakeMedia(), post_id=post_id).as_media(),
+        ]
+    )

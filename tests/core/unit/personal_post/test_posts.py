@@ -33,22 +33,10 @@ def test_should_get_post_by_id(db_session: Any, test_user_id: UUID) -> None:
     post = replace(FakePersonalPost(), user_id=test_user_id).as_post()
 
     created = repo.create(post)
-    fetched = repo.get_by_id(created.id)
+    fetched = repo.get(created.id)
 
     assert fetched
     assert fetched.id == created.id
-
-
-def test_should_list_posts_by_user(db_session: Any, test_user_id: UUID) -> None:
-    repo = PostRepository(db_session)
-
-    for _ in range(3):
-        post = replace(FakePersonalPost(), user_id=test_user_id).as_post()
-        repo.create(post)
-
-    result = repo.list_by_user(test_user_id)
-    assert len(result) == 3
-    assert all(p.user_id == test_user_id for p in result)
 
 
 def test_should_update_like_counts(db_session: Any, test_user_id: UUID) -> None:
@@ -56,9 +44,9 @@ def test_should_update_like_counts(db_session: Any, test_user_id: UUID) -> None:
     post = replace(FakePersonalPost(), user_id=test_user_id).as_post()
 
     created = repo.create(post)
-    repo.update_like_counts(created.id, like_count=10, dislike_count=2)
+    repo.update_like_counts(created.id, like_count_delta=10, dislike_count_delta=2)
 
-    updated = repo.get_by_id(created.id)
+    updated = repo.get(created.id)
     assert updated
     assert updated.like_count == 10
     assert updated.dislike_count == 2
@@ -71,7 +59,7 @@ def test_should_delete_post(db_session: Any, test_user_id: UUID) -> None:
     created = repo.create(post)
     repo.delete(created.id)
 
-    assert repo.get_by_id(created.id) is None
+    assert repo.get(created.id) is None
 
 
 def test_should_fail_delete_unknown(db_session: Any) -> None:

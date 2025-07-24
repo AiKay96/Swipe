@@ -23,7 +23,7 @@ class LikeRepository:
         self.db.refresh(db_like)
         return db_like.to_object()
 
-    def get_by_user_and_post(self, user_id: UUID, post_id: UUID) -> Like | None:
+    def get(self, user_id: UUID, post_id: UUID) -> Like | None:
         db_like = (
             self.db.query(LikeModel).filter_by(user_id=user_id, post_id=post_id).first()
         )
@@ -42,4 +42,8 @@ class LikeRepository:
         if not like:
             raise DoesNotExistError("Like not found.")
         self.db.delete(like)
+        self.db.commit()
+
+    def delete_by_post(self, post_id: UUID) -> None:
+        self.db.query(LikeModel).filter_by(post_id=post_id).delete()
         self.db.commit()
