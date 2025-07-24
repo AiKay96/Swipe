@@ -9,6 +9,12 @@ from src.runner.db import Base
 from src.runner.config import settings
 from src.infra.models.user import User
 from src.infra.models.token import Token
+from src.infra.models.user import User
+from src.infra.models.token import Token
+from src.infra.models.post.personal_post import PersonalPost
+from src.infra.models.post.post_comment import PostComment
+from src.infra.models.post.post_like import PostLike
+from src.infra.models.post.post_media import PostMedia
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

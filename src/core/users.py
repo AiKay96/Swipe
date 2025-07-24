@@ -15,8 +15,7 @@ class User:
 
 
 class UserRepository(Protocol):
-    def create(self, user: User) -> User:
-        pass
+    def create(self, user: User) -> User: ...
 
     def read_by(
         self,
@@ -24,11 +23,8 @@ class UserRepository(Protocol):
         user_id: UUID | None = None,
         mail: str | None = None,
         username: str | None = None,
-    ) -> User | None:
-        pass
+    ) -> User | None: ...
 
-    def find_by_username(self, username: str) -> User | None:
-        pass
+    def find_by_username(self, username: str) -> User | None: ...
 
-    def update(self, user_id: UUID, updates: dict[str, Any]) -> None:
-        pass
+    def update(self, user_id: UUID, updates: dict[str, Any]) -> None: ...
