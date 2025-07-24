@@ -10,9 +10,9 @@ from src.core.users import User as DomainUser
 from src.runner.db import Base
 
 if TYPE_CHECKING:
-    from .personal_post.post import Post
     from .personal_post.comment import Comment
     from .personal_post.like import Like
+    from .personal_post.post import Post
 
 
 class User(Base):

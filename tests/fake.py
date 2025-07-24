@@ -5,8 +5,10 @@ from uuid import UUID, uuid4
 
 from faker import Faker
 
-from src.core.personal_post.comments import Comment
-from src.core.personal_post.posts import Post
+from src.core.personal_post.comments import Comment as PersonalPostComment
+from src.core.personal_post.likes import Like as PersonalPostLike
+from src.core.personal_post.medias import Media, MediaType
+from src.core.personal_post.posts import Post as PersonalPost
 from src.core.users import User
 
 _faker = Faker()
@@ -55,8 +57,8 @@ class FakePersonalPost:
     created_at: datetime = field(default_factory=datetime.utcnow)
     id: UUID = field(default_factory=uuid4)
 
-    def as_post(self) -> Post:
-        return Post(
+    def as_post(self) -> PersonalPost:
+        return PersonalPost(
             id=self.id,
             user_id=self.user_id,
             description=self.description,
@@ -73,10 +75,42 @@ class FakePersonalPostComment:
     content: str = field(default_factory=lambda: _faker.sentence(nb_words=8))
     id: UUID = field(default_factory=uuid4)
 
-    def as_comment(self) -> Comment:
-        return Comment(
+    def as_comment(self) -> PersonalPostComment:
+        return PersonalPostComment(
             id=self.id,
             post_id=self.post_id,
             user_id=self.user_id,
             content=self.content,
+        )
+
+
+@dataclass(frozen=True)
+class FakePersonalPostLike:
+    post_id: UUID = field(default_factory=uuid4)
+    user_id: UUID = field(default_factory=uuid4)
+    is_dislike: bool = False
+    id: UUID = field(default_factory=uuid4)
+
+    def as_like(self) -> PersonalPostLike:
+        return PersonalPostLike(
+            id=self.id,
+            post_id=self.post_id,
+            user_id=self.user_id,
+            is_dislike=self.is_dislike,
+        )
+
+
+@dataclass(frozen=True)
+class FakePersonalPostMedia:
+    post_id: UUID = field(default_factory=uuid4)
+    url: str = field(default_factory=lambda: _faker.image_url())
+    media_type: str = MediaType.IMAGE.value
+    id: UUID = field(default_factory=uuid4)
+
+    def as_media(self) -> Media:
+        return Media(
+            id=self.id,
+            post_id=self.post_id,
+            url=self.url,
+            media_type=MediaType(self.media_type),
         )

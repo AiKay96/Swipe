@@ -10,7 +10,7 @@ from src.infra.repositories.personal_post.comments import (
 )
 from src.infra.repositories.personal_post.posts import PostRepository
 from src.infra.repositories.users import UserRepository
-from tests.fake import FakePersonalPostComment, FakePersonalPost, FakeUser
+from tests.fake import FakePersonalPost, FakePersonalPostComment, FakeUser
 
 
 @pytest.fixture
