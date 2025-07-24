@@ -10,10 +10,10 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from src.infra.fastapi.auth import auth_api
 from src.infra.fastapi.users import user_api
-from src.infra.models.post.personal_post import PersonalPost  # noqa: F401
-from src.infra.models.post.post_comment import PostComment  # noqa: F401
+from src.infra.models.post.post_comment import PostPersonalPostComment  # noqa: F401
 from src.infra.models.post.post_like import PostLike  # noqa: F401
 from src.infra.models.post.post_media import PostMedia  # noqa: F401
+from src.infra.repositories.post.personal_posts import PersonalPostRepository
 from src.infra.repositories.tokens import TokenRepository
 from src.infra.repositories.users import UserRepository
 from src.runner.db import Base
@@ -55,5 +55,6 @@ def client(db_session: Session) -> TestClient:
     app.dependency_overrides[get_db] = lambda: db_session
     app.state.users = UserRepository(db_session)
     app.state.tokens = TokenRepository(db_session)
+    app.state.personal_posts = PersonalPostRepository(db_session)
 
     return TestClient(app)

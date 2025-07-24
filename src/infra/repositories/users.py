@@ -16,21 +16,23 @@ from src.infra.models.user import User as UserORM
 class UserRepository:
     db: Session
 
-    def create(self, user: User) -> None:
+    def create(self, user: User) -> User:
         if self.db.query(UserModel).filter_by(mail=user.mail).first():
             raise ExistsError
+
         db_user = UserModel(
             mail=user.mail,
             hashed_password=bcrypt.hashpw(
                 user.password.encode(), bcrypt.gensalt()
             ).decode(),
-            user_id=user.id,
             username=user.username,
             display_name=user.display_name,
             bio=user.bio,
         )
         self.db.add(db_user)
         self.db.commit()
+        self.db.refresh(db_user)
+        return db_user.to_object()
 
     def read_by(
         self,

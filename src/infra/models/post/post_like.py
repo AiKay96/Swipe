@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.core.post.personal_post_likes import PersonalPostLike as DomainLike
 from src.runner.db import Base
 
 if TYPE_CHECKING:
@@ -24,3 +25,21 @@ class PostLike(Base):
 
     post: Mapped[PersonalPost] = relationship(back_populates="reactions")
     user: Mapped[User] = relationship(back_populates="post_likes")
+
+    def __init__(
+        self,
+        post_id: UUID,
+        user_id: UUID,
+        is_dislike: bool,
+    ) -> None:
+        self.post_id = post_id
+        self.user_id = user_id
+        self.is_dislike = is_dislike
+
+    def to_object(self) -> DomainLike:
+        return DomainLike(
+            id=self.id,
+            post_id=self.post_id,
+            user_id=self.user_id,
+            is_dislike=self.is_dislike,
+        )

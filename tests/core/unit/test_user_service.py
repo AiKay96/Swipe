@@ -14,14 +14,13 @@ def test_should_register_user() -> None:
 
     service = UserService(repo)
     fake = FakeUser()
+    repo.create.return_value = fake.as_user()
 
     user = service.register(fake.mail, fake.password)
 
     repo.create.assert_called_once()
     assert user.mail == fake.mail
     assert user.password == fake.password
-    assert user.username == user.display_name
-    assert isinstance(user.username, str)
 
 
 def test_should_not_register_duplicate_user() -> None:

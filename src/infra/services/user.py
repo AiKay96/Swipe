@@ -23,8 +23,7 @@ class UserService:
             username=username,
             display_name=username,
         )
-        self.repo.create(user)
-        return user
+        return self.repo.create(user)
 
     def get_by_mail(self, mail: str) -> User:
         mail = mail.lower()
