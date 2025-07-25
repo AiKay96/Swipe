@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 
 from src.core.personal_post.posts import PersonalPostService
+from src.core.social import SocialService
 from src.core.tokens import TokenRepository
 from src.core.users import User, UserRepository
 from src.infra.services.auth import AuthService
@@ -30,6 +31,13 @@ def get_personal_post_service(request: Request) -> PersonalPostService:
 PersonalPostServiceDependable = Annotated[
     PersonalPostService, Depends(get_personal_post_service)
 ]
+
+
+def get_social_service(request: Request) -> SocialService:
+    return request.app.state.social  # type: ignore
+
+
+SocialServiceDependable = Annotated[SocialService, Depends(get_social_service)]
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth")
 

@@ -6,13 +6,13 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, field_validator
 from starlette.responses import JSONResponse
 
-from src.core.errors import DoesNotExistError, ExistsError
-from src.core.personal_post.posts import Media, MediaType, Post
+from src.core.personal_post.posts import Media, MediaType, Post, Privacy
 from src.core.users import User
 from src.infra.fastapi.dependables import (
     PersonalPostServiceDependable,
     get_current_user,
 )
+from src.infra.fastapi.utils import exception_response
 
 personal_post_api = APIRouter(tags=["PersonalPosts"])
 
@@ -64,43 +64,49 @@ def extract_post_fields(post: Post) -> dict[str, Any]:
         "like_count": post.like_count,
         "dislike_count": post.dislike_count,
         "created_at": post.created_at,
-        "media": [
-            MediaResponse(url=m.url, media_type=m.media_type) for m in post.media
-        ],
+        "media": [MediaItem(url=m.url, media_type=m.media_type) for m in post.media],
     }
 
 
-class MediaResponse(BaseModel):
+class MediaItem(BaseModel):
     url: str
     media_type: MediaType
 
+    @classmethod
+    def from_media(cls, media: Media) -> "MediaItem":
+        return cls(url=media.url, media_type=media.media_type)
 
-class PostResponse(BaseModel):
+
+class PostItem(BaseModel):
     id: UUID
     user_id: UUID
     description: str
+    privacy: Privacy
     like_count: int
     dislike_count: int
     created_at: datetime
-    media: list[MediaResponse]
+    media: list[MediaItem]
+
+    @classmethod
+    def from_post(cls, post: Post) -> "PostItem":
+        return cls(
+            id=post.id,
+            user_id=post.user_id,
+            description=post.description,
+            privacy=post.privacy,
+            like_count=post.like_count,
+            dislike_count=post.dislike_count,
+            created_at=post.created_at,
+            media=[MediaItem.from_media(m) for m in post.media],
+        )
 
 
 class PostEnvelope(BaseModel):
-    post: PostResponse
+    post: PostItem
 
 
 class PostListEnvelope(BaseModel):
-    posts: list[PostResponse]
-
-
-def exception_response(e: Exception) -> JSONResponse:
-    if isinstance(e, DoesNotExistError):
-        return JSONResponse(status_code=404, content={"message": "Resource not found."})
-    if isinstance(e, ExistsError):
-        return JSONResponse(
-            status_code=409, content={"message": "Conflict: Already exists."}
-        )
-    return JSONResponse(status_code=500, content={"message": str(e)})
+    posts: list[PostItem]
 
 
 @personal_post_api.post(
@@ -118,7 +124,7 @@ def create_post(
         post = service.create_post(
             user_id=user.id, description=request.description, media=media_objs
         )
-        return {"post": extract_post_fields(post)}
+        return {"post": PostItem.from_post(post)}
     except Exception as e:
         return exception_response(e)
 
@@ -245,6 +251,6 @@ def get_user_posts(
         if before is None:
             before = datetime.now()
         posts = service.get_user_posts(user_id=user_id, limit=limit, before=before)
-        return {"posts": [PostResponse(**extract_post_fields(p)) for p in posts]}
+        return {"posts": [PostItem.from_post(p) for p in posts]}
     except Exception as e:
         return exception_response(e)

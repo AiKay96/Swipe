@@ -15,25 +15,6 @@ user_api = APIRouter(tags=["Users"])
 USERNAME_REGEX = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{2,29}$")
 
 
-def extract_user_fields(user: User) -> dict[str, Any]:
-    return {
-        "id": user.id,
-        "username": user.username,
-        "display_name": user.display_name,
-        "bio": user.bio,
-    }
-
-
-def extract_me_fields(user: User) -> dict[str, Any]:
-    return {
-        "id": user.id,
-        "mail": user.mail,
-        "username": user.username,
-        "display_name": user.display_name,
-        "bio": user.bio,
-    }
-
-
 class CreateUserRequest(BaseModel):
     mail: str
     password: str
@@ -44,6 +25,15 @@ class UserItem(BaseModel):
     username: str
     display_name: str
     bio: str | None
+
+    @classmethod
+    def from_user(cls, user: User) -> "UserItem":
+        return cls(
+            id=user.id,
+            username=user.username,
+            display_name=user.display_name,
+            bio=user.bio,
+        )
 
 
 class UserItemEnvelope(BaseModel):
@@ -56,6 +46,16 @@ class MeItem(BaseModel):
     username: str
     display_name: str
     bio: str | None
+
+    @classmethod
+    def from_user(cls, user: User) -> "MeItem":
+        return cls(
+            id=user.id,
+            mail=user.mail,
+            username=user.username,
+            display_name=user.display_name,
+            bio=user.bio,
+        )
 
 
 class MeItemEnvelope(BaseModel):
@@ -117,7 +117,7 @@ def register(
     try:
         service = UserService(users)
         user = service.register(request.mail, request.password)
-        return {"user": extract_user_fields(user)}
+        return {"user": UserItem.from_user(user)}
 
     except ExistsError:
         return JSONResponse(
@@ -136,7 +136,7 @@ def get_user(
 ) -> dict[str, Any] | JSONResponse:
     try:
         user = UserService(users).get_by_username(username)
-        return {"user": extract_user_fields(user)}
+        return {"user": UserItem.from_user(user)}
     except DoesNotExistError:
         return JSONResponse(
             status_code=404,
@@ -150,7 +150,7 @@ def get_user(
     response_model=MeItemEnvelope,
 )
 def get_me(user: User = Depends(get_current_user)) -> dict[str, Any]:  # noqa: B008
-    return {"user": extract_me_fields(user)}
+    return {"user": MeItem.from_user(user)}
 
 
 @user_api.patch(
