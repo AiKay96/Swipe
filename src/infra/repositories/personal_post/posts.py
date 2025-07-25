@@ -38,8 +38,8 @@ class PostRepository:
     def get_posts_by_user(
         self,
         user_id: UUID,
-        limit: int = 15,
-        before: datetime | None = None,
+        limit: int,
+        before: datetime,
         include_friends_only: bool = False,
     ) -> list[Post]:
         query = self.db.query(PostModel).filter_by(user_id=user_id)

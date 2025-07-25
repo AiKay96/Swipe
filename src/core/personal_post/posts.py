@@ -56,8 +56,8 @@ class PostRepository(Protocol):
     def get_posts_by_user(
         self,
         user_id: UUID,
-        limit: int = 15,
-        before: datetime | None = None,
+        limit: int,
+        before: datetime,
         include_friends_only: bool = False,
     ) -> list[Post]: ...
 
@@ -87,6 +87,6 @@ class PersonalPostService(Protocol):
         self,
         user_id: UUID,
         limit: int,
-        before: datetime | None,
+        before: datetime,
         include_friends_only: bool = False,
     ) -> list[Post]: ...

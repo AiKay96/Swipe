@@ -7,7 +7,7 @@ from faker import Faker
 
 from src.core.personal_post.comments import Comment as PersonalPostComment
 from src.core.personal_post.likes import Like as PersonalPostLike
-from src.core.personal_post.posts import Media, Privacy
+from src.core.personal_post.posts import Media, MediaType, Privacy
 from src.core.personal_post.posts import Post as PersonalPost
 from src.core.users import User
 
@@ -56,7 +56,12 @@ class FakePersonalPost:
     dislike_count: int = 0
     created_at: datetime = field(default_factory=datetime.utcnow)
     privacy: Privacy = Privacy.FRIENDS_ONLY
-    media: list[Media] = field(default_factory=list)
+    media: list[Media] = field(
+        default_factory=lambda: [
+            Media(url=_faker.image_url(), media_type=MediaType.IMAGE)
+        ]
+    )
+
     comments: list[PersonalPostComment] = field(default_factory=list)
     id: UUID = field(default_factory=uuid4)
 
@@ -72,6 +77,14 @@ class FakePersonalPost:
             media=self.media,
             comments=self.comments,
         )
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "description": self.description,
+            "media": [
+                {"url": m.url, "media_type": m.media_type.value} for m in self.media
+            ],
+        }
 
 
 @dataclass(frozen=True)

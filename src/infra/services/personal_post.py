@@ -98,7 +98,7 @@ class PersonalPostService:
         self,
         user_id: UUID,
         limit: int,
-        before: datetime | None,
+        before: datetime,
         include_friends_only: bool = False,
     ) -> list[Post]:
         return self.post_repo.get_posts_by_user(

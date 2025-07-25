@@ -243,7 +243,7 @@ def get_user_posts(
 ) -> dict[str, Any] | JSONResponse:
     try:
         if before is None:
-            before = datetime.utcnow()
+            before = datetime.now()
         posts = service.get_user_posts(user_id=user_id, limit=limit, before=before)
         return {"posts": [PostResponse(**extract_post_fields(p)) for p in posts]}
     except Exception as e:

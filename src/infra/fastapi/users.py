@@ -1,5 +1,6 @@
 import re
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, field_validator
@@ -16,6 +17,7 @@ USERNAME_REGEX = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{2,29}$")
 
 def extract_user_fields(user: User) -> dict[str, Any]:
     return {
+        "id": user.id,
         "username": user.username,
         "display_name": user.display_name,
         "bio": user.bio,
@@ -24,6 +26,7 @@ def extract_user_fields(user: User) -> dict[str, Any]:
 
 def extract_me_fields(user: User) -> dict[str, Any]:
     return {
+        "id": user.id,
         "mail": user.mail,
         "username": user.username,
         "display_name": user.display_name,
@@ -37,6 +40,7 @@ class CreateUserRequest(BaseModel):
 
 
 class UserItem(BaseModel):
+    id: UUID
     username: str
     display_name: str
     bio: str | None
@@ -47,6 +51,7 @@ class UserItemEnvelope(BaseModel):
 
 
 class MeItem(BaseModel):
+    id: UUID
     mail: str
     username: str
     display_name: str
