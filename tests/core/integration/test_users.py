@@ -164,10 +164,14 @@ def test_should_update_username_only(client: TestClient) -> None:
     )
     assert get_response.status_code == 200
 
+
 def test_should_update_all_fields(client: TestClient) -> None:
     user = FakeUser()
     r = client.post("/users", json=user.as_create_dict())
-    login = client.post("/auth", data={"username": r.json()["user"]["username"], "password": user.password})
+    login = client.post(
+        "/auth",
+        data={"username": r.json()["user"]["username"], "password": user.password},
+    )
     token = login.json()["access_token"]
 
     new_user = FakeUser()
@@ -177,21 +181,28 @@ def test_should_update_all_fields(client: TestClient) -> None:
         "bio": new_user.bio,
     }
 
-    patch = client.patch("/me", headers={"Authorization": f"Bearer {token}"}, json=update_data)
+    patch = client.patch(
+        "/me", headers={"Authorization": f"Bearer {token}"}, json=update_data
+    )
     assert patch.status_code == 200
 
-    get = client.get(f"/users/{new_user.username}", headers={"Authorization": f"Bearer {token}"})
+    get = client.get(
+        f"/users/{new_user.username}", headers={"Authorization": f"Bearer {token}"}
+    )
     assert get.status_code == 200
     assert get.json()["user"]["display_name"] == new_user.display_name
     assert get.json()["user"]["bio"] == new_user.bio
+
 
 def test_should_fail_get_me_unauthorized(client: TestClient) -> None:
     response = client.get("/me")
     assert response.status_code == 401
 
+
 def test_should_fail_get_user_unauthorized(client: TestClient) -> None:
     response = client.get("/users/someuser")
     assert response.status_code == 401
+
 
 @pytest.mark.parametrize(
     "username",

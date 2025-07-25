@@ -1,6 +1,7 @@
 from collections.abc import Generator
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -40,6 +41,13 @@ def init_app() -> FastAPI:
 
     app = FastAPI()
 
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:8081"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     db: Session = next(get_db())
     app.state.users = UserRepository(db)
     app.state.tokens = TokenRepository(db)

@@ -225,6 +225,7 @@ def test_should_get_friend_status_all_cases() -> None:
     friend_repo.get_request.side_effect = lambda *_: None
     assert service.get_friend_status(user.id, other.id) == FriendStatus.NOT_FRIENDS
 
+
 def test_should_fail_friend_status_if_user_missing() -> None:
     user = FakeUser().as_user()
     user_repo = Mock()
@@ -249,6 +250,7 @@ def test_should_get_follow_status() -> None:
 
     follow_repo.get.return_value = None
     assert service.is_following(user.id, other.id) is False
+
 
 def test_should_fail_follow_status_if_user_missing() -> None:
     user = FakeUser().as_user()
