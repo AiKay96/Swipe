@@ -6,8 +6,8 @@ from uuid import UUID, uuid4
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.core.personal_post.medias import Media as DomainMedia
-from src.core.personal_post.medias import MediaType
+from src.core.personal_post.posts import Media as DomainMedia
+from src.core.personal_post.posts import MediaType
 from src.runner.db import Base
 
 if TYPE_CHECKING:
@@ -32,7 +32,6 @@ class Media(Base):
     def to_object(self) -> DomainMedia:
         return DomainMedia(
             id=self.id,
-            post_id=self.post_id,
             url=self.url,
             media_type=MediaType(self.media_type),
         )

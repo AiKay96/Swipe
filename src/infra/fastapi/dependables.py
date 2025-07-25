@@ -3,10 +3,10 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 
+from src.core.personal_post.posts import PersonalPostService
 from src.core.tokens import TokenRepository
 from src.core.users import User, UserRepository
 from src.infra.services.auth import AuthService
-from src.infra.services.personal_post import PersonalPostService
 
 
 def get_user_repository(request: Request) -> UserRepository:
@@ -24,12 +24,7 @@ TokenRepositoryDependable = Annotated[TokenRepository, Depends(get_token_reposit
 
 
 def get_personal_post_service(request: Request) -> PersonalPostService:
-    return PersonalPostService(
-        request.app.state.personal_posts,
-        request.app.state.personal_post_likes,
-        request.app.state.personal_post_comments,
-        request.app.state.personal_post_media,
-    )
+    return request.app.state.personal_posts  # type: ignore
 
 
 PersonalPostServiceDependable = Annotated[

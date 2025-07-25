@@ -7,7 +7,7 @@ from faker import Faker
 
 from src.core.personal_post.comments import Comment as PersonalPostComment
 from src.core.personal_post.likes import Like as PersonalPostLike
-from src.core.personal_post.medias import Media, MediaType
+from src.core.personal_post.posts import Media
 from src.core.personal_post.posts import Post as PersonalPost
 from src.core.users import User
 
@@ -101,20 +101,4 @@ class FakePersonalPostLike:
             post_id=self.post_id,
             user_id=self.user_id,
             is_dislike=self.is_dislike,
-        )
-
-
-@dataclass(frozen=True)
-class FakePersonalPostMedia:
-    post_id: UUID = field(default_factory=uuid4)
-    url: str = field(default_factory=lambda: _faker.image_url())
-    media_type: str = MediaType.IMAGE.value
-    id: UUID = field(default_factory=uuid4)
-
-    def as_media(self) -> Media:
-        return Media(
-            id=self.id,
-            post_id=self.post_id,
-            url=self.url,
-            media_type=MediaType(self.media_type),
         )

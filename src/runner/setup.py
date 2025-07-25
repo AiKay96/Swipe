@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.infra.fastapi.auth import auth_api
+from src.infra.fastapi.personal_posts import personal_post_api
 from src.infra.fastapi.users import user_api
 from src.infra.repositories.personal_post.comments import (
     CommentRepository as PersonalPostCommentRepository,
@@ -12,12 +13,10 @@ from src.infra.repositories.personal_post.comments import (
 from src.infra.repositories.personal_post.likes import (
     LikeRepository as PersonalPostLikeRepository,
 )
-from src.infra.repositories.personal_post.medias import (
-    MediaRepository as PersonalPostMediaRepository,
-)
 from src.infra.repositories.personal_post.posts import PostRepository
 from src.infra.repositories.tokens import TokenRepository
 from src.infra.repositories.users import UserRepository
+from src.infra.services.personal_post import PersonalPostService
 from src.runner.config import settings
 from src.runner.db import Base
 
@@ -37,15 +36,17 @@ def init_app() -> FastAPI:
     Base.metadata.create_all(bind=engine)
 
     app = FastAPI()
-    app.include_router(user_api)
-    app.include_router(auth_api)
 
     db: Session = next(get_db())
     app.state.users = UserRepository(db)
     app.state.tokens = TokenRepository(db)
-    app.state.personal_posts = PostRepository(db)
-    app.state.personal_post_comments = PersonalPostCommentRepository(db)
-    app.state.personal_post_likes = PersonalPostLikeRepository(db)
-    app.state.personal_post_media = PersonalPostMediaRepository(db)
+    app.state.personal_posts = PersonalPostService(
+        PostRepository(db),
+        PersonalPostLikeRepository(db),
+        PersonalPostCommentRepository(db),
+    )
+    app.include_router(user_api)
+    app.include_router(auth_api)
+    app.include_router(personal_post_api)
 
     return app

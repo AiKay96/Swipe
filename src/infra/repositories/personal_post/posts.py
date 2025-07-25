@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from src.core.errors import DoesNotExistError
 from src.core.personal_post.posts import Post
-from src.infra.models.personal_post.post import Post as PersonalPostModel
+from src.infra.models.personal_post.media import Media as MediaModel
+from src.infra.models.personal_post.post import Post as PostModel
 
 
 @dataclass
@@ -13,25 +14,30 @@ class PostRepository:
     db: Session
 
     def create(self, post: Post) -> Post:
-        db_post = PersonalPostModel(
+        db_post = PostModel(
             user_id=post.user_id,
             description=post.description,
             like_count=post.like_count,
             dislike_count=post.dislike_count,
         )
         self.db.add(db_post)
+        self.db.flush()
+        db_post.media = [
+            MediaModel(post_id=db_post.id, url=m.url, media_type=m.media_type.value)
+            for m in post.media
+        ]
         self.db.commit()
         self.db.refresh(db_post)
         return db_post.to_object()
 
     def get(self, post_id: UUID) -> Post | None:
-        db_post = self.db.query(PersonalPostModel).filter_by(id=post_id).first()
+        db_post = self.db.query(PostModel).filter_by(id=post_id).first()
         return db_post.to_object() if db_post else None
 
     def update_like_counts(
         self, post_id: UUID, like_count_delta: int = 0, dislike_count_delta: int = 0
     ) -> None:
-        post = self.db.query(PersonalPostModel).filter_by(id=post_id).first()
+        post = self.db.query(PostModel).filter_by(id=post_id).first()
         if not post:
             raise DoesNotExistError("Post not found.")
 
@@ -40,7 +46,7 @@ class PostRepository:
         self.db.commit()
 
     def delete(self, post_id: UUID) -> None:
-        post = self.db.query(PersonalPostModel).filter_by(id=post_id).first()
+        post = self.db.query(PostModel).filter_by(id=post_id).first()
         if not post:
             raise DoesNotExistError("Post not found.")
         self.db.delete(post)

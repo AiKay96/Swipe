@@ -13,9 +13,16 @@ from src.infra.fastapi.users import user_api
 from src.infra.models.personal_post.comment import Comment  # noqa: F401
 from src.infra.models.personal_post.like import Like  # noqa: F401
 from src.infra.models.personal_post.media import Media  # noqa: F401
+from src.infra.repositories.personal_post.comments import (
+    CommentRepository as PersonalPostCommentRepository,
+)
+from src.infra.repositories.personal_post.likes import (
+    LikeRepository as PersonalPostLikeRepository,
+)
 from src.infra.repositories.personal_post.posts import PostRepository
 from src.infra.repositories.tokens import TokenRepository
 from src.infra.repositories.users import UserRepository
+from src.infra.services.personal_post import PersonalPostService
 from src.runner.db import Base
 from src.runner.setup import get_db
 
@@ -55,6 +62,10 @@ def client(db_session: Session) -> TestClient:
     app.dependency_overrides[get_db] = lambda: db_session
     app.state.users = UserRepository(db_session)
     app.state.tokens = TokenRepository(db_session)
-    app.state.personal_posts = PostRepository(db_session)
+    app.state.personal_posts = PersonalPostService(
+        PostRepository(db_session),
+        PersonalPostLikeRepository(db_session),
+        PersonalPostCommentRepository(db_session),
+    )
 
     return TestClient(app)
