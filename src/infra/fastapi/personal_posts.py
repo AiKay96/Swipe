@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, field_validator
 from starlette.responses import JSONResponse
 
@@ -89,6 +89,10 @@ class PostEnvelope(BaseModel):
     post: PostResponse
 
 
+class PostListEnvelope(BaseModel):
+    posts: list[PostResponse]
+
+
 def exception_response(e: Exception) -> JSONResponse:
     if isinstance(e, DoesNotExistError):
         return JSONResponse(status_code=404, content={"message": "Resource not found."})
@@ -129,6 +133,21 @@ def delete_post(
         service.delete_post(post_id=post_id, user_id=user.id)
         return JSONResponse(
             status_code=204, content={"message": "Post removed successfully."}
+        )
+    except Exception as e:
+        return exception_response(e)
+
+
+@personal_post_api.post("/posts/{post_id}/privacy", status_code=200)
+def change_post_privacy(
+    post_id: UUID,
+    service: PersonalPostServiceDependable,
+    user: User = Depends(get_current_user),  # noqa: B008
+) -> JSONResponse:
+    try:
+        service.change_privacy(user_id=user.id, post_id=post_id)
+        return JSONResponse(
+            status_code=200, content={"message": "Post privacy updated successfully."}
         )
     except Exception as e:
         return exception_response(e)
@@ -207,5 +226,25 @@ def delete_comment(
         return JSONResponse(
             status_code=204, content={"message": "Comment deleted successfully."}
         )
+    except Exception as e:
+        return exception_response(e)
+
+
+@personal_post_api.get(
+    "/users/{user_id}/posts",
+    response_model=PostListEnvelope,
+)
+def get_user_posts(
+    user_id: UUID,
+    service: PersonalPostServiceDependable,
+    before: datetime | None = None,
+    limit: int = Query(15, ge=1, le=50),
+    user: User = Depends(get_current_user),  # noqa: B008, ARG001
+) -> dict[str, Any] | JSONResponse:
+    try:
+        if before is None:
+            before = datetime.utcnow()
+        posts = service.get_user_posts(user_id=user_id, limit=limit, before=before)
+        return {"posts": [PostResponse(**extract_post_fields(p)) for p in posts]}
     except Exception as e:
         return exception_response(e)

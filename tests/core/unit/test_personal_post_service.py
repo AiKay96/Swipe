@@ -1,9 +1,12 @@
+from dataclasses import replace
+from datetime import datetime
 from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
 
 from src.core.errors import DoesNotExistError
+from src.core.personal_post.posts import Privacy
 from src.infra.services.personal_post import PersonalPostService
 from tests.fake import (
     FakePersonalPost,
@@ -148,6 +151,35 @@ def test_should_unlike_post() -> None:
     )
 
 
+def test_should_toggle_privacy_from_public_to_friends() -> None:
+    post_repo = Mock()
+    like_repo = Mock()
+    comment_repo = Mock()
+
+    post = FakePersonalPost().as_post()
+    post = replace(post, privacy=Privacy.PUBLIC)
+    post_repo.get.return_value = post
+
+    service = PersonalPostService(post_repo, like_repo, comment_repo)
+    service.change_privacy(post.user_id, post.id)
+
+    post_repo.update_privacy.assert_called_once_with(post.id, Privacy.FRIENDS_ONLY)
+
+
+def test_should_toggle_privacy_from_friends_to_public() -> None:
+    post_repo = Mock()
+    like_repo = Mock()
+    comment_repo = Mock()
+
+    post = FakePersonalPost().as_post()
+    post_repo.get.return_value = post
+
+    service = PersonalPostService(post_repo, like_repo, comment_repo)
+    service.change_privacy(post.user_id, post.id)
+
+    post_repo.update_privacy.assert_called_once_with(post.id, Privacy.PUBLIC)
+
+
 def test_should_comment_post() -> None:
     post_repo = Mock()
     like_repo = Mock()
@@ -188,3 +220,32 @@ def test_should_fail_removing_others_comment() -> None:
 
     with pytest.raises(DoesNotExistError):
         service.remove_comment(comment.post_id, comment.id, uuid4())
+
+
+def test_should_get_user_posts() -> None:
+    post_repo = Mock()
+    like_repo = Mock()
+    comment_repo = Mock()
+
+    public_post = replace(FakePersonalPost(), privacy=Privacy.PUBLIC).as_post()
+    friends_post = FakePersonalPost().as_post()
+
+    post_repo.get_posts_by_user.return_value = [public_post, friends_post]
+    now = datetime.now()
+    service = PersonalPostService(post_repo, like_repo, comment_repo)
+    results = service.get_user_posts(
+        user_id=public_post.user_id,
+        before=now,
+        limit=10,
+        include_friends_only=True,
+    )
+
+    post_repo.get_posts_by_user.assert_called_once_with(
+        user_id=public_post.user_id,
+        limit=10,
+        before=now,
+        include_friends_only=True,
+    )
+
+    assert len(results) == 2
+    assert {p.privacy for p in results} == {Privacy.PUBLIC, Privacy.FRIENDS_ONLY}

@@ -22,7 +22,7 @@ class Media(Base):
     url: Mapped[str] = mapped_column(String)
     media_type: Mapped[str] = mapped_column(String)
 
-    post: Mapped[Post] = relationship(back_populates="media")
+    _post: Mapped[Post] = relationship(back_populates="media")
 
     def __init__(self, post_id: UUID, url: str, media_type: str):
         self.post_id = post_id

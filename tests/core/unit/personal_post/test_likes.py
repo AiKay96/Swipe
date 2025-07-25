@@ -90,24 +90,3 @@ def test_should_fail_on_unknown_like_delete(db_session: Any) -> None:
 
     with pytest.raises(DoesNotExistError):
         repo.delete(uuid4())
-
-
-def test_should_delete_all_likes_for_post(
-    db_session: Any, user_id: UUID, post_id: UUID
-) -> None:
-    like_repo = LikeRepository(db_session)
-    user_repo = UserRepository(db_session)
-
-    user = FakeUser().as_user()
-    created = user_repo.create(user)
-
-    like1 = replace(FakeLike(), user_id=user_id, post_id=post_id).as_like()
-    like2 = replace(FakeLike(), user_id=created.id, post_id=post_id).as_like()
-
-    like_repo.create(like1)
-    like_repo.create(like2)
-
-    like_repo.delete_by_post(post_id)
-
-    assert like_repo.get(user_id, post_id) is None
-    assert like_repo.get(created.id, post_id) is None

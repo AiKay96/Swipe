@@ -1,10 +1,11 @@
 from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 
 from src.core.errors import DoesNotExistError
 from src.core.personal_post.comments import Comment, CommentRepository
 from src.core.personal_post.likes import Like, LikeRepository
-from src.core.personal_post.posts import Media, Post, PostRepository
+from src.core.personal_post.posts import Media, Post, PostRepository, Privacy
 
 
 @dataclass
@@ -73,6 +74,16 @@ class PersonalPostService:
 
         self.like_repo.delete(existing.id)
 
+    def change_privacy(self, user_id: UUID, post_id: UUID) -> None:
+        post = self.post_repo.get(post_id)
+        if not post or post.user_id != user_id:
+            raise DoesNotExistError
+
+        if post.privacy == Privacy.FRIENDS_ONLY:
+            self.post_repo.update_privacy(post_id, Privacy.PUBLIC)
+        else:
+            self.post_repo.update_privacy(post_id, Privacy.FRIENDS_ONLY)
+
     def comment_post(self, user_id: UUID, post_id: UUID, content: str) -> None:
         comment = Comment(user_id=user_id, post_id=post_id, content=content)
         self.comment_repo.create(comment)
@@ -82,3 +93,17 @@ class PersonalPostService:
         if not comment or comment.user_id != user_id or comment.post_id != post_id:
             raise DoesNotExistError
         self.comment_repo.delete(comment_id)
+
+    def get_user_posts(
+        self,
+        user_id: UUID,
+        limit: int,
+        before: datetime | None,
+        include_friends_only: bool = False,
+    ) -> list[Post]:
+        return self.post_repo.get_posts_by_user(
+            user_id=user_id,
+            limit=limit,
+            before=before,
+            include_friends_only=include_friends_only,
+        )

@@ -7,7 +7,7 @@ from faker import Faker
 
 from src.core.personal_post.comments import Comment as PersonalPostComment
 from src.core.personal_post.likes import Like as PersonalPostLike
-from src.core.personal_post.posts import Media
+from src.core.personal_post.posts import Media, Privacy
 from src.core.personal_post.posts import Post as PersonalPost
 from src.core.users import User
 
@@ -55,6 +55,7 @@ class FakePersonalPost:
     like_count: int = 0
     dislike_count: int = 0
     created_at: datetime = field(default_factory=datetime.utcnow)
+    privacy: Privacy = Privacy.FRIENDS_ONLY
     media: list[Media] = field(default_factory=list)
     comments: list[PersonalPostComment] = field(default_factory=list)
     id: UUID = field(default_factory=uuid4)
@@ -67,6 +68,7 @@ class FakePersonalPost:
             like_count=self.like_count,
             dislike_count=self.dislike_count,
             created_at=self.created_at,
+            privacy=self.privacy,
             media=self.media,
             comments=self.comments,
         )

@@ -1,10 +1,11 @@
 from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
 from src.core.errors import DoesNotExistError
-from src.core.personal_post.posts import Post
+from src.core.personal_post.posts import Post, Privacy
 from src.infra.models.personal_post.media import Media as MediaModel
 from src.infra.models.personal_post.post import Post as PostModel
 
@@ -34,6 +35,31 @@ class PostRepository:
         db_post = self.db.query(PostModel).filter_by(id=post_id).first()
         return db_post.to_object() if db_post else None
 
+    def get_posts_by_user(
+        self,
+        user_id: UUID,
+        limit: int = 15,
+        before: datetime | None = None,
+        include_friends_only: bool = False,
+    ) -> list[Post]:
+        query = self.db.query(PostModel).filter_by(user_id=user_id)
+
+        if before:
+            query = query.filter(PostModel.created_at < before)
+
+        if include_friends_only:
+            query = query.filter(
+                PostModel.privacy.in_(
+                    [Privacy.PUBLIC.value, Privacy.FRIENDS_ONLY.value]
+                )
+            )
+        else:
+            query = query.filter(PostModel.privacy == Privacy.PUBLIC.value)
+
+        query = query.order_by(PostModel.created_at.desc()).limit(limit)
+
+        return [p.to_object() for p in query.all()]
+
     def update_like_counts(
         self, post_id: UUID, like_count_delta: int = 0, dislike_count_delta: int = 0
     ) -> None:
@@ -43,6 +69,13 @@ class PostRepository:
 
         post.like_count += like_count_delta
         post.dislike_count += dislike_count_delta
+        self.db.commit()
+
+    def update_privacy(self, post_id: UUID, privacy: Privacy) -> None:
+        post = self.db.query(PostModel).filter_by(id=post_id).first()
+        if not post:
+            raise DoesNotExistError("Post not found.")
+        post.privacy = privacy.value
         self.db.commit()
 
     def delete(self, post_id: UUID) -> None:

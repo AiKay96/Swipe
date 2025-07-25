@@ -23,8 +23,8 @@ class Like(Base):
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     is_dislike: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    post: Mapped[Post] = relationship(back_populates="reactions")
-    user: Mapped[User] = relationship(back_populates="post_likes")
+    _post: Mapped[Post] = relationship(back_populates="_reactions")
+    _user: Mapped[User] = relationship(back_populates="_post_likes")
 
     def __init__(
         self,

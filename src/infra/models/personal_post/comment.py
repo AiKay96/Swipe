@@ -27,8 +27,8 @@ class Comment(Base):
     content: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    post: Mapped[Post] = relationship(back_populates="comments")
-    user: Mapped[User] = relationship(back_populates="post_comments")
+    _post: Mapped[Post] = relationship(back_populates="comments")
+    _user: Mapped[User] = relationship(back_populates="_post_comments")
 
     def __init__(
         self,

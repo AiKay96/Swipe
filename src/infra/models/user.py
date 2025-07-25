@@ -29,11 +29,11 @@ class User(Base):
     personal_posts: Mapped[list[Post]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
-    post_likes: Mapped[list[Like]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
+    _post_likes: Mapped[list[Like]] = relationship(
+        back_populates="_user", cascade="all, delete-orphan"
     )
-    post_comments: Mapped[list[Comment]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
+    _post_comments: Mapped[list[Comment]] = relationship(
+        back_populates="_user", cascade="all, delete-orphan"
     )
 
     def __init__(

@@ -43,7 +43,3 @@ class LikeRepository:
             raise DoesNotExistError("Like not found.")
         self.db.delete(like)
         self.db.commit()
-
-    def delete_by_post(self, post_id: UUID) -> None:
-        self.db.query(LikeModel).filter_by(post_id=post_id).delete()
-        self.db.commit()
