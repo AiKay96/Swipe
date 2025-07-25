@@ -1,7 +1,15 @@
+from enum import Enum
 from typing import Protocol
 from uuid import UUID
 
 from .users import User
+
+
+class FriendStatus(str, Enum):
+    NOT_FRIENDS = "not_friends"
+    PENDING_OUTGOING = "pending_outgoing"
+    PENDING_INCOMING = "pending_incoming"
+    FRIENDS = "friends"
 
 
 class SocialService(Protocol):
@@ -24,3 +32,7 @@ class SocialService(Protocol):
     def get_incoming_friend_requests(self, user_id: UUID) -> list[User]: ...
 
     def get_friends(self, user_id: UUID) -> list[User]: ...
+
+    def get_friend_status(self, user_id: UUID, other_id: UUID) -> FriendStatus: ...
+
+    def is_following(self, user_id: UUID, other_id: UUID) -> bool: ...

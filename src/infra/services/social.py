@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from src.core.errors import DoesNotExistError, ExistsError, ForbiddenError
+from src.core.social import FriendStatus
 from src.core.users import User, UserRepository
 from src.infra.repositories.social import FollowRepository, FriendRepository
 
@@ -87,3 +88,19 @@ class SocialService:
     def get_friends(self, user_id: UUID) -> list[User]:
         ids = self.friend_repo.get_friends(user_id)
         return [u for u in (self.user_repo.read_by(user_id=uid) for uid in ids) if u]
+
+    def get_friend_status(self, user_id: UUID, other_id: UUID) -> FriendStatus:
+        if not self.user_repo.read_by(user_id=other_id):
+            raise DoesNotExistError("User not exist anymore.")
+        if self.friend_repo.get_friend(user_id, other_id):
+            return FriendStatus.FRIENDS
+        if self.friend_repo.get_request(user_id, other_id):
+            return FriendStatus.PENDING_OUTGOING
+        if self.friend_repo.get_request(other_id, user_id):
+            return FriendStatus.PENDING_INCOMING
+        return FriendStatus.NOT_FRIENDS
+
+    def is_following(self, user_id: UUID, other_id: UUID) -> bool:
+        if not self.user_repo.read_by(user_id=other_id):
+            raise DoesNotExistError("User not exist anymore.")
+        return self.follow_repo.get(user_id, other_id) is not None

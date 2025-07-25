@@ -7,11 +7,17 @@ from pydantic import BaseModel, field_validator
 from starlette.responses import JSONResponse
 
 from src.core.errors import DoesNotExistError, ExistsError
+from src.core.social import FriendStatus
 from src.core.users import User
-from src.infra.fastapi.dependables import UserRepositoryDependable, get_current_user
+from src.infra.fastapi.dependables import (
+    SocialServiceDependable,
+    UserRepositoryDependable,
+    get_current_user,
+)
 from src.infra.services.user import UserService
 
 user_api = APIRouter(tags=["Users"])
+
 USERNAME_REGEX = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{2,29}$")
 
 
@@ -25,14 +31,20 @@ class UserItem(BaseModel):
     username: str
     display_name: str
     bio: str | None
+    friend_status: FriendStatus
+    is_following: bool
 
     @classmethod
-    def from_user(cls, user: User) -> "UserItem":
+    def from_user(
+        cls, user: User, friend_status: FriendStatus, is_following: bool
+    ) -> "UserItem":
         return cls(
             id=user.id,
             username=user.username,
             display_name=user.display_name,
             bio=user.bio,
+            friend_status=friend_status,
+            is_following=is_following,
         )
 
 
@@ -109,7 +121,7 @@ class UserUpdateRequest(BaseModel):
 @user_api.post(
     "/users",
     status_code=201,
-    response_model=UserItemEnvelope,
+    response_model=MeItemEnvelope,
 )
 def register(
     request: CreateUserRequest, users: UserRepositoryDependable
@@ -117,7 +129,7 @@ def register(
     try:
         service = UserService(users)
         user = service.register(request.mail, request.password)
-        return {"user": UserItem.from_user(user)}
+        return {"user": MeItem.from_user(user)}
 
     except ExistsError:
         return JSONResponse(
@@ -132,11 +144,16 @@ def register(
     response_model=UserItemEnvelope,
 )
 def get_user(
-    username: str, users: UserRepositoryDependable
+    username: str,
+    users: UserRepositoryDependable,
+    social: SocialServiceDependable,
+    current_user: User = Depends(get_current_user),  # noqa: B008
 ) -> dict[str, Any] | JSONResponse:
     try:
         user = UserService(users).get_by_username(username)
-        return {"user": UserItem.from_user(user)}
+        friend_status = social.get_friend_status(current_user.id, user.id)
+        is_following = social.is_following(current_user.id, user.id)
+        return {"user": UserItem.from_user(user, friend_status, is_following)}
     except DoesNotExistError:
         return JSONResponse(
             status_code=404,
