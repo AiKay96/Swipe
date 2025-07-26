@@ -15,7 +15,7 @@ class Settings:
     access_token_expire_minutes: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
     )
-    reftesh_token_expire_days: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "90"))
+    reftesh_token_expire_days: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_DAYS", "90"))
     base_url: str = os.getenv("BASE_URL", "http://localhost:8000")
 
 

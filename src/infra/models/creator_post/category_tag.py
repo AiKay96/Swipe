@@ -19,18 +19,6 @@ reference_category_tags = Table(
     ),
 )
 
-
-creator_post_category_tags = Table(
-    "creator_post_category_tags",
-    Base.metadata,
-    Column(
-        "post_id", ForeignKey("creator_posts.id", ondelete="CASCADE"), primary_key=True
-    ),
-    Column(
-        "tag_id", ForeignKey("category_tags.id", ondelete="CASCADE"), primary_key=True
-    ),
-)
-
 if TYPE_CHECKING:
     from .category import Category
     from .reference import Reference

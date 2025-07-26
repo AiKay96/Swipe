@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class Media(Base):
-    __tablename__ = "post_media"
+    __tablename__ = "perosnal_post_media"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     post_id: Mapped[UUID] = mapped_column(ForeignKey("personal_posts.id"))

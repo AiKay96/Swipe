@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class Like(Base):
-    __tablename__ = "post_likes"
+    __tablename__ = "perosnal_post_likes"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     post_id: Mapped[UUID] = mapped_column(ForeignKey("personal_posts.id"))

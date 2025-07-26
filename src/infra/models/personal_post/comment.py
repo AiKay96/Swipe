@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class Comment(Base):
-    __tablename__ = "post_comments"
+    __tablename__ = "perosnal_post_comments"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     post_id: Mapped[UUID] = mapped_column(ForeignKey("personal_posts.id"))
