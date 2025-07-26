@@ -25,7 +25,7 @@ class Comment(Base):
     post_id: Mapped[UUID] = mapped_column(ForeignKey("personal_posts.id"))
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     content: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     _post: Mapped[Post] = relationship(back_populates="comments")
     _user: Mapped[User] = relationship(back_populates="_post_comments")

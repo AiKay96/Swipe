@@ -6,6 +6,7 @@ from src.core.errors import DoesNotExistError
 from src.core.personal_post.comments import Comment, CommentRepository
 from src.core.personal_post.likes import Like, LikeRepository
 from src.core.personal_post.posts import Media, Post, PostRepository, Privacy
+from src.infra.repositories.social import FriendRepository
 
 
 @dataclass
@@ -13,6 +14,7 @@ class PersonalPostService:
     post_repo: PostRepository
     like_repo: LikeRepository
     comment_repo: CommentRepository
+    friend_repo: FriendRepository
 
     def create_post(self, user_id: UUID, description: str, media: list[Media]) -> Post:
         post = Post(user_id=user_id, description=description, media=media)
@@ -97,13 +99,14 @@ class PersonalPostService:
     def get_user_posts(
         self,
         user_id: UUID,
+        from_user_id: UUID,
         limit: int,
         before: datetime,
-        include_friends_only: bool = False,
     ) -> list[Post]:
+        is_friend = self.friend_repo.get_friend(user_id, from_user_id) is not None
         return self.post_repo.get_posts_by_user(
             user_id=user_id,
             limit=limit,
             before=before,
-            include_friends_only=include_friends_only,
+            include_friends_only=is_friend,
         )

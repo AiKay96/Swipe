@@ -21,7 +21,7 @@ class AuthService:
         payload = {
             "sub": user_id,
             "type": "access",
-            "exp": datetime.utcnow()
+            "exp": datetime.now()
             + timedelta(minutes=settings.access_token_expire_minutes),
         }
         return str(
@@ -30,13 +30,12 @@ class AuthService:
 
     def create_refresh_token(self, user_id: str) -> str:
         jti = uuid4()
-        expires = datetime.utcnow() + timedelta(days=settings.reftesh_token_expire_days)
+        expires = datetime.now() + timedelta(days=settings.reftesh_token_expire_days)
         payload = {
             "sub": user_id,
             "type": "refresh",
             "jti": str(jti),
-            "exp": datetime.utcnow()
-            + timedelta(days=settings.reftesh_token_expire_days),
+            "exp": datetime.now() + timedelta(days=settings.reftesh_token_expire_days),
         }
         self.tokens.save(jti, UUID(user_id), expires)
         return str(

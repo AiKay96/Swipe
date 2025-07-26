@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 
+from src.core.feed import FeedService
 from src.core.personal_post.posts import PersonalPostService
 from src.core.social import SocialService
 from src.core.tokens import TokenRepository
@@ -38,6 +39,13 @@ def get_social_service(request: Request) -> SocialService:
 
 
 SocialServiceDependable = Annotated[SocialService, Depends(get_social_service)]
+
+
+def get_feed_service(request: Request) -> FeedService:
+    return request.app.state.feed  # type: ignore
+
+
+FeedServiceDependable = Annotated[FeedService, Depends(get_feed_service)]
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth")
 

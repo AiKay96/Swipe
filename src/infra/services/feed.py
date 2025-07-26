@@ -10,11 +10,13 @@ from src.infra.repositories.social import FriendRepository
 
 @dataclass
 class FeedService:
-    friend_repo: FriendRepository
     post_repo: PostRepository
+    friend_repo: FriendRepository
     like_repo: LikeRepository
 
-    def get_feed(self, user_id: UUID, before: datetime, limit: int) -> list[FeedPost]:
+    def get_personal_feed(
+        self, user_id: UUID, before: datetime, limit: int
+    ) -> list[FeedPost]:
         friend_ids = self.friend_repo.get_friend_ids(user_id)
         posts = self.post_repo.get_posts_by_users(friend_ids, before, limit)
         reactions = self.like_repo.get_user_reactions(user_id, [p.id for p in posts])

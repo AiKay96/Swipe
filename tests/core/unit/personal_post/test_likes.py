@@ -91,6 +91,7 @@ def test_should_fail_on_unknown_like_delete(db_session: Any) -> None:
     with pytest.raises(DoesNotExistError):
         repo.delete(uuid4())
 
+
 def test_should_get_user_reactions(db_session: Any, user_id: UUID) -> None:
     post_repo = PostRepository(db_session)
     like_repo = LikeRepository(db_session)
@@ -100,11 +101,12 @@ def test_should_get_user_reactions(db_session: Any, user_id: UUID) -> None:
     post3 = post_repo.create(replace(FakePost(), user_id=user_id).as_post())
 
     like_repo.create(replace(FakeLike(), user_id=user_id, post_id=post1.id).as_like())
-    like_repo.create(replace(FakeLike(is_dislike=True), user_id=user_id, post_id=post2.id).as_like())
+    like_repo.create(
+        replace(FakeLike(is_dislike=True), user_id=user_id, post_id=post2.id).as_like()
+    )
 
     reactions = like_repo.get_user_reactions(user_id, [post1.id, post2.id, post3.id])
 
     assert reactions[post1.id].value == "like"
     assert reactions[post2.id].value == "dislike"
     assert post3.id not in reactions
-

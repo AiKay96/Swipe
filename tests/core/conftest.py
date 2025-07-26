@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.infra.fastapi.auth import auth_api
+from src.infra.fastapi.feed import feed_api
 from src.infra.fastapi.personal_posts import personal_post_api
 from src.infra.fastapi.social import social_api
 from src.infra.fastapi.users import user_api
@@ -23,6 +24,7 @@ from src.infra.repositories.personal_post.posts import PostRepository
 from src.infra.repositories.social import FollowRepository, FriendRepository
 from src.infra.repositories.tokens import TokenRepository
 from src.infra.repositories.users import UserRepository
+from src.infra.services.feed import FeedService
 from src.infra.services.personal_post import PersonalPostService
 from src.infra.services.social import SocialService
 from src.runner.db import Base
@@ -63,21 +65,38 @@ def client(db_session: Session) -> TestClient:
     app.include_router(auth_api)
     app.include_router(personal_post_api)
     app.include_router(social_api)
+    app.include_router(feed_api)
 
     app.dependency_overrides[get_db] = lambda: db_session
-    app.state.users = UserRepository(db_session)
+    user_repo = UserRepository(db_session)
     app.state.tokens = TokenRepository(db_session)
 
-    app.state.personal_posts = PersonalPostService(
-        PostRepository(db_session),
-        PersonalPostLikeRepository(db_session),
-        PersonalPostCommentRepository(db_session),
-    )
+    post_repo = PostRepository(db_session)
+    personal_post_like_repo = PersonalPostLikeRepository(db_session)
+    personal_post_comment_repo = PersonalPostCommentRepository(db_session)
 
+    follow_repo = FollowRepository(db_session)
+    friend_repo = FriendRepository(db_session)
+    token_repo = TokenRepository(db_session)
+
+    app.state.users = user_repo
+    app.state.tokens = token_repo
+
+    app.state.personal_posts = PersonalPostService(
+        post_repo=post_repo,
+        like_repo=personal_post_like_repo,
+        comment_repo=personal_post_comment_repo,
+        friend_repo=friend_repo,
+    )
     app.state.social = SocialService(
-        FollowRepository(db_session),
-        FriendRepository(db_session),
-        app.state.users,
+        follow_repo=follow_repo,
+        friend_repo=friend_repo,
+        user_repo=user_repo,
+    )
+    app.state.feed = FeedService(
+        post_repo=post_repo,
+        friend_repo=friend_repo,
+        like_repo=personal_post_like_repo,
     )
 
     return TestClient(app)

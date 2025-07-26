@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.infra.fastapi.auth import auth_api
+from src.infra.fastapi.feed import feed_api
 from src.infra.fastapi.personal_posts import personal_post_api
 from src.infra.fastapi.social import social_api
 from src.infra.fastapi.users import user_api
@@ -19,6 +20,7 @@ from src.infra.repositories.personal_post.posts import PostRepository
 from src.infra.repositories.social import FollowRepository, FriendRepository
 from src.infra.repositories.tokens import TokenRepository
 from src.infra.repositories.users import UserRepository
+from src.infra.services.feed import FeedService
 from src.infra.services.personal_post import PersonalPostService
 from src.infra.services.social import SocialService
 from src.runner.config import settings
@@ -49,22 +51,42 @@ def init_app() -> FastAPI:
         allow_headers=["*"],
     )
     db: Session = next(get_db())
-    app.state.users = UserRepository(db)
+
+    user_repo = UserRepository(db)
     app.state.tokens = TokenRepository(db)
+
+    post_repo = PostRepository(db)
+    personal_post_like_repo = PersonalPostLikeRepository(db)
+    personal_post_comment_repo = PersonalPostCommentRepository(db)
+
+    follow_repo = FollowRepository(db)
+    friend_repo = FriendRepository(db)
+    token_repo = TokenRepository(db)
+
+    app.state.users = user_repo
+    app.state.tokens = token_repo
+
     app.state.personal_posts = PersonalPostService(
-        PostRepository(db),
-        PersonalPostLikeRepository(db),
-        PersonalPostCommentRepository(db),
+        post_repo=post_repo,
+        like_repo=personal_post_like_repo,
+        comment_repo=personal_post_comment_repo,
+        friend_repo=friend_repo,
     )
     app.state.social = SocialService(
-        FollowRepository(db),
-        FriendRepository(db),
-        app.state.users,
+        follow_repo=follow_repo,
+        friend_repo=friend_repo,
+        user_repo=user_repo,
+    )
+    app.state.feed = FeedService(
+        post_repo=post_repo,
+        friend_repo=friend_repo,
+        like_repo=personal_post_like_repo,
     )
 
     app.include_router(user_api)
     app.include_router(auth_api)
     app.include_router(personal_post_api)
     app.include_router(social_api)
+    app.include_router(feed_api)
 
     return app

@@ -30,7 +30,7 @@ class Post:
     description: str = ""
     like_count: int = 0
     dislike_count: int = 0
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=datetime.now)
     privacy: Privacy = Privacy.FRIENDS_ONLY
     media: list[Media] = field(default_factory=list)
     comments: list[Comment] = field(default_factory=list)
@@ -90,7 +90,7 @@ class PersonalPostService(Protocol):
     def get_user_posts(
         self,
         user_id: UUID,
+        from_user_id: UUID,
         limit: int,
         before: datetime,
-        include_friends_only: bool = False,
     ) -> list[Post]: ...

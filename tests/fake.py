@@ -54,7 +54,7 @@ class FakePersonalPost:
     description: str = field(default_factory=lambda: _faker.sentence(nb_words=6))
     like_count: int = 0
     dislike_count: int = 0
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=datetime.now)
     privacy: Privacy = Privacy.FRIENDS_ONLY
     media: list[Media] = field(
         default_factory=lambda: [

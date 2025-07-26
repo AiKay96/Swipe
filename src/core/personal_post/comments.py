@@ -9,7 +9,7 @@ class Comment:
     post_id: UUID
     user_id: UUID
     content: str
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=datetime.now)
     id: UUID = field(default_factory=uuid4)
 
 

@@ -245,12 +245,14 @@ def get_user_posts(
     service: PersonalPostServiceDependable,
     before: datetime | None = None,
     limit: int = Query(15, ge=1, le=50),
-    user: User = Depends(get_current_user),  # noqa: B008, ARG001
+    user: User = Depends(get_current_user),  # noqa: B008
 ) -> dict[str, Any] | JSONResponse:
     try:
         if before is None:
             before = datetime.now()
-        posts = service.get_user_posts(user_id=user_id, limit=limit, before=before)
+        posts = service.get_user_posts(
+            user_id=user_id, from_user_id=user.id, limit=limit, before=before
+        )
         return {"posts": [PostItem.from_post(p) for p in posts]}
     except Exception as e:
         return exception_response(e)

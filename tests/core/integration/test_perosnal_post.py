@@ -74,7 +74,7 @@ def test_should_get_user_posts(test_client: TestClient, user: FakeUser) -> None:
     test_client.post(f"/posts/{post['id']}/privacy")
     r = test_client.get(
         f"/users/{user.id}/posts",
-        params={"before": datetime.utcnow().isoformat(), "limit": 10},
+        params={"before": datetime.now().isoformat(), "limit": 10},
     )
 
     assert r.status_code == 200
