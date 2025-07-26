@@ -55,6 +55,12 @@ class UserRepository:
 
         return user.to_object()
 
+    def read_many_by_ids(self, ids: list[UUID]) -> list[User]:
+        if not ids:
+            return []
+        users = self.db.query(UserModel).filter(UserModel.id.in_(ids)).all()
+        return [u.to_object() for u in users]
+
     def find_by_username(self, username: str) -> User | None:
         stmt = select(UserORM).where(UserORM.username.ilike(username))
         user = self.db.scalar(stmt)

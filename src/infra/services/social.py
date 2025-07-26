@@ -75,19 +75,19 @@ class SocialService:
 
     def get_followers(self, user_id: UUID) -> list[User]:
         ids = self.follow_repo.get_followers(user_id)
-        return [u for u in (self.user_repo.read_by(user_id=uid) for uid in ids) if u]
+        return self.user_repo.read_many_by_ids(ids)
 
     def get_following(self, user_id: UUID) -> list[User]:
         ids = self.follow_repo.get_following(user_id)
-        return [u for u in (self.user_repo.read_by(user_id=uid) for uid in ids) if u]
+        return self.user_repo.read_many_by_ids(ids)
 
     def get_incoming_friend_requests(self, user_id: UUID) -> list[User]:
         ids = self.friend_repo.get_requests_to(user_id)
-        return [u for u in (self.user_repo.read_by(user_id=uid) for uid in ids) if u]
+        return self.user_repo.read_many_by_ids(ids)
 
     def get_friends(self, user_id: UUID) -> list[User]:
-        ids = self.friend_repo.get_friends(user_id)
-        return [u for u in (self.user_repo.read_by(user_id=uid) for uid in ids) if u]
+        ids = self.friend_repo.get_friend_ids(user_id)
+        return self.user_repo.read_many_by_ids(ids)
 
     def get_friend_status(self, user_id: UUID, other_id: UUID) -> FriendStatus:
         if not self.user_repo.read_by(user_id=other_id):

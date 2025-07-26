@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from typing import Protocol
 from uuid import UUID, uuid4
 
+from src.core.feed import Reaction
+
 
 @dataclass
 class Like:
@@ -19,3 +21,7 @@ class LikeRepository(Protocol):
     def update(self, like_id: UUID, is_dislike: bool) -> None: ...
 
     def delete(self, like_id: UUID) -> None: ...
+
+    def get_user_reactions(
+        self, user_id: UUID, post_ids: list[UUID]
+    ) -> dict[UUID, Reaction]: ...

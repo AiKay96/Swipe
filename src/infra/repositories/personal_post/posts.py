@@ -60,6 +60,24 @@ class PostRepository:
 
         return [p.to_object() for p in query.all()]
 
+    def get_posts_by_users(
+        self, user_ids: list[UUID], before: datetime, limit: int
+    ) -> list[Post]:
+        if not user_ids:
+            return []
+
+        posts = (
+            self.db.query(PostModel)
+            .filter(
+                PostModel.user_id.in_(user_ids),
+                PostModel.created_at < before,
+            )
+            .order_by(PostModel.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [p.to_object() for p in posts]
+
     def update_like_counts(
         self, post_id: UUID, like_count_delta: int = 0, dislike_count_delta: int = 0
     ) -> None:

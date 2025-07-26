@@ -152,6 +152,9 @@ class FakeUserRepo:
     def update(self, user_id: UUID, updates: dict[str, Any]) -> None:  # noqa: ARG002
         pass
 
+    def read_many_by_ids(self, ids: list[UUID]) -> list[User]:  # noqa: ARG002
+        return []
+
 
 @dataclass
 class FakeTokenRepo:

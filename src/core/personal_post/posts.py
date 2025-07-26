@@ -61,6 +61,10 @@ class PostRepository(Protocol):
         include_friends_only: bool = False,
     ) -> list[Post]: ...
 
+    def get_posts_by_users(
+        self, user_ids: list[UUID], before: datetime, limit: int
+    ) -> list[Post]: ...
+
 
 class PersonalPostService(Protocol):
     def create_post(

@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from src.core.errors import DoesNotExistError
+from src.core.feed import Reaction
 from src.core.personal_post.likes import Like
 from src.infra.models.personal_post.like import Like as LikeModel
 
@@ -43,3 +44,17 @@ class LikeRepository:
             raise DoesNotExistError("Like not found.")
         self.db.delete(like)
         self.db.commit()
+
+    def get_user_reactions(
+        self, user_id: UUID, post_ids: list[UUID]
+    ) -> dict[UUID, Reaction]:
+        likes = (
+            self.db.query(LikeModel)
+            .filter(LikeModel.user_id == user_id, LikeModel.post_id.in_(post_ids))
+            .all()
+        )
+
+        return {
+            like.post_id: Reaction.DISLIKE if like.is_dislike else Reaction.LIKE
+            for like in likes
+        }

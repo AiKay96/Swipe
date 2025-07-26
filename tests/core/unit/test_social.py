@@ -76,8 +76,8 @@ def test_should_return_friends_of_user(db_session: Any) -> None:
     repo.send_request(user1.id, user2.id)
     repo.accept_request(user1.id, user2.id)
 
-    friends1 = repo.get_friends(user1.id)
-    friends2 = repo.get_friends(user2.id)
+    friends1 = repo.get_friend_ids(user1.id)
+    friends2 = repo.get_friend_ids(user2.id)
 
     assert user2.id in friends1
     assert user1.id in friends2

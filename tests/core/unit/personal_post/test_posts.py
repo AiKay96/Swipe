@@ -103,7 +103,7 @@ def test_should_get_user_posts_only_public(db_session: Any, test_user_id: UUID) 
     results = repo.get_posts_by_user(
         user_id=test_user_id,
         limit=10,
-        before=datetime.utcnow(),
+        before=datetime.now(),
         include_friends_only=False,
     )
 
@@ -124,10 +124,25 @@ def test_should_get_user_all_posts(db_session: Any, test_user_id: UUID) -> None:
     results = repo.get_posts_by_user(
         user_id=test_user_id,
         limit=10,
-        before=datetime.utcnow(),
+        before=datetime.now(),
         include_friends_only=True,
     )
 
     assert len(results) == 2
     assert results[1].id == created1.id
     assert results[0].id == created2.id
+
+
+def test_should_get_posts_by_users(db_session: Any, test_user_id: UUID) -> None:
+    repo = PostRepository(db_session)
+
+    repo.create(replace(FakePersonalPost(), user_id=test_user_id).as_post())
+    repo.create(replace(FakePersonalPost(), user_id=test_user_id).as_post())
+    repo.create(replace(FakePersonalPost(), user_id=test_user_id).as_post())
+
+    before = datetime.now()
+    results = repo.get_posts_by_users([test_user_id], before, limit=2)
+
+    assert len(results) == 2
+    assert all(p.user_id == test_user_id for p in results)
+    assert results[0].created_at >= results[1].created_at
