@@ -27,13 +27,13 @@ class User(Base):
     bio: Mapped[str | None] = mapped_column(String)
 
     personal_posts: Mapped[list[Post]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
+        back_populates="user", cascade="all, delete-orphan", lazy="selectin"
     )
     _post_likes: Mapped[list[Like]] = relationship(
-        back_populates="_user", cascade="all, delete-orphan"
+        back_populates="_user", cascade="all, delete-orphan", lazy="selectin"
     )
     _post_comments: Mapped[list[Comment]] = relationship(
-        back_populates="_user", cascade="all, delete-orphan"
+        back_populates="_user", cascade="all, delete-orphan", lazy="selectin"
     )
 
     def __init__(

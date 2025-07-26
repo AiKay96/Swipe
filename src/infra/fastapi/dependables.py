@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 
+from src.core.creator_post.references import ReferenceService
 from src.core.feed import FeedService
 from src.core.personal_post.posts import PersonalPostService
 from src.core.social import SocialService
@@ -46,6 +47,13 @@ def get_feed_service(request: Request) -> FeedService:
 
 
 FeedServiceDependable = Annotated[FeedService, Depends(get_feed_service)]
+
+
+def get_reference_service(request: Request) -> ReferenceService:
+    return request.app.state.references  # type: ignore
+
+
+ReferenceServiceDependable = Annotated[ReferenceService, Depends(get_reference_service)]
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth")
 

@@ -8,8 +8,11 @@ from sqlalchemy.orm import Session, sessionmaker
 from src.infra.fastapi.auth import auth_api
 from src.infra.fastapi.feed import feed_api
 from src.infra.fastapi.personal_posts import personal_post_api
+from src.infra.fastapi.references import reference_api
 from src.infra.fastapi.social import social_api
 from src.infra.fastapi.users import user_api
+from src.infra.repositories.creator_post.categories import CategoryRepository
+from src.infra.repositories.creator_post.references import ReferenceRepository
 from src.infra.repositories.personal_post.comments import (
     CommentRepository as PersonalPostCommentRepository,
 )
@@ -22,6 +25,7 @@ from src.infra.repositories.tokens import TokenRepository
 from src.infra.repositories.users import UserRepository
 from src.infra.services.feed import FeedService
 from src.infra.services.personal_post import PersonalPostService
+from src.infra.services.reference import ReferenceService
 from src.infra.services.social import SocialService
 from src.runner.config import settings
 from src.runner.db import Base
@@ -63,6 +67,9 @@ def init_app() -> FastAPI:
     friend_repo = FriendRepository(db)
     token_repo = TokenRepository(db)
 
+    reference_repo = ReferenceRepository(db)
+    category_repo = CategoryRepository(db)
+
     app.state.users = user_repo
     app.state.tokens = token_repo
 
@@ -82,11 +89,16 @@ def init_app() -> FastAPI:
         friend_repo=friend_repo,
         like_repo=personal_post_like_repo,
     )
+    app.state.references = ReferenceService(
+        reference_repo=reference_repo,
+        category_repo=category_repo,
+    )
 
     app.include_router(user_api)
     app.include_router(auth_api)
     app.include_router(personal_post_api)
     app.include_router(social_api)
     app.include_router(feed_api)
+    app.include_router(reference_api)
 
     return app

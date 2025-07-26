@@ -33,13 +33,13 @@ class Post(Base):
 
     user: Mapped[User] = relationship(back_populates="personal_posts")
     media: Mapped[list[Media]] = relationship(
-        back_populates="_post", cascade="all, delete-orphan"
+        back_populates="_post", cascade="all, delete-orphan", lazy="selectin"
     )
     comments: Mapped[list[Comment]] = relationship(
-        back_populates="_post", cascade="all, delete-orphan"
+        back_populates="_post", cascade="all, delete-orphan", lazy="selectin"
     )
     _reactions: Mapped[list[Like]] = relationship(
-        back_populates="_post", cascade="all, delete-orphan"
+        back_populates="_post", cascade="all, delete-orphan", lazy="selectin"
     )
 
     def __init__(
