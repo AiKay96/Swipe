@@ -8,6 +8,7 @@ from faker import Faker
 from src.core.creator_post.categories import Category
 from src.core.creator_post.posts import Post as CreatorPost
 from src.core.creator_post.references import Reference
+from src.core.creator_post.saves import Save
 from src.core.personal_post.comments import Comment as PersonalPostComment
 from src.core.personal_post.likes import Like as PersonalPostLike
 from src.core.personal_post.posts import Media, MediaType, Privacy
@@ -171,7 +172,7 @@ class FakeCreatorPost:
     description: str = field(default_factory=lambda: _faker.sentence(nb_words=6))
     like_count: int = 0
     dislike_count: int = 0
-    category_id: UUID = field(default_factory=uuid4)
+    category_id: UUID | None = None
     reference_id: UUID | None = None
     created_at: datetime = field(default_factory=datetime.now)
     category_tag_names: list[str] = field(default_factory=list)
@@ -190,4 +191,17 @@ class FakeCreatorPost:
             created_at=self.created_at,
             category_tag_names=self.category_tag_names,
             hashtag_names=self.hashtag_names,
+        )
+
+
+@dataclass(frozen=True)
+class FakeSave:
+    id: UUID = field(default_factory=uuid4)
+    user_id: UUID = field(default_factory=uuid4)
+    post_id: UUID = field(default_factory=uuid4)
+
+    def as_save(self) -> Save:
+        return Save(
+            user_id=self.user_id,
+            post_id=self.post_id,
         )

@@ -127,6 +127,22 @@ class PostRepository:
 
         return [p.to_object() for p in posts]
 
+    def get_saved_posts_by_user(
+        self, user_id: UUID, limit: int, before: datetime
+    ) -> list[Post]:
+        posts = (
+            self.db.query(PostModel)
+            .join(PostModel._saves)
+            .filter(
+                PostModel._saves.any(user_id=user_id),
+                PostModel.created_at < before,
+            )
+            .order_by(PostModel.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [p.to_object() for p in posts]
+
     def update_like_counts(
         self, post_id: UUID, like_count_delta: int = 0, dislike_count_delta: int = 0
     ) -> None:

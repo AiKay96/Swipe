@@ -65,20 +65,28 @@ class PostRepository(Protocol):
         user_id: UUID,
         limit: int,
         before: datetime,
-        include_friends_only: bool = False,
     ) -> list[Post]: ...
 
     def get_posts_by_users(
         self, user_ids: list[UUID], before: datetime, limit: int
     ) -> list[Post]: ...
 
+    def get_saved_posts_by_user(
+        self, user_id: UUID, limit: int, before: datetime
+    ) -> list[Post]: ...
+
 
 class CreatorPostService(Protocol):
     def create_post(
-        self, user_id: UUID, description: str, media: list[Media]
+        self,
+        user_id: UUID,
+        category_id: UUID,
+        reference_id: UUID,
+        description: str,
+        category_tag_names: list[str],
+        hashtag_names: list[str],
+        media: list[Media],
     ) -> Post: ...
-
-    def change_privacy(self, user_id: UUID, post_id: UUID) -> None: ...
 
     def delete_post(self, post_id: UUID, user_id: UUID) -> None: ...
 
@@ -101,7 +109,13 @@ class CreatorPostService(Protocol):
     def get_user_posts(
         self,
         user_id: UUID,
-        from_user_id: UUID,
+        limit: int,
+        before: datetime,
+    ) -> list[Post]: ...
+
+    def get_user_saves(
+        self,
+        user_id: UUID,
         limit: int,
         before: datetime,
     ) -> list[Post]: ...
