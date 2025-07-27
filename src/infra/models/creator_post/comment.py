@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.core.personal_post.comments import (
+from src.core.creator_post.comments import (
     Comment as DomainComment,
 )
 from src.runner.db import Base
@@ -15,20 +15,20 @@ from src.runner.db import Base
 if TYPE_CHECKING:
     from src.infra.models.user import User
 
-    from .post import PersonalPost
+    from .post import Post
 
 
-class PersonalComment(Base):
-    __tablename__ = "perosnal_post_comments"
+class Comment(Base):
+    __tablename__ = "creator_post_comments"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    post_id: Mapped[UUID] = mapped_column(ForeignKey("personal_posts.id"))
+    post_id: Mapped[UUID] = mapped_column(ForeignKey("creator_posts.id"))
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     content: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
-    _post: Mapped[PersonalPost] = relationship(back_populates="comments")
-    _user: Mapped[User] = relationship(back_populates="_personal_post_comments")
+    _post: Mapped[Post] = relationship(back_populates="comments")
+    _user: Mapped[User] = relationship(back_populates="_creator_post_comments")
 
     def __init__(
         self,

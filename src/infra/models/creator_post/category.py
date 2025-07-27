@@ -8,6 +8,7 @@ from src.runner.db import Base
 
 if TYPE_CHECKING:
     from .category_tag import CategoryTag
+    from .post import Post
     from .reference import Reference
 
 
@@ -22,6 +23,12 @@ class Category(Base):
     )
     references: Mapped[list["Reference"]] = relationship(
         back_populates="category", cascade="all, delete", lazy="selectin"
+    )
+
+    posts: Mapped[list["Post"]] = relationship(
+        back_populates="category",
+        cascade="all, delete",
+        lazy="selectin",
     )
 
     def __init__(self, name: str) -> None:

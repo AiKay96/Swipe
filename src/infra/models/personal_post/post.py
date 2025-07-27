@@ -14,12 +14,12 @@ from src.runner.db import Base
 if TYPE_CHECKING:
     from src.infra.models.user import User
 
-    from .comment import Comment
-    from .like import Like
-    from .media import Media
+    from .comment import PersonalComment
+    from .like import PersonalLike
+    from .media import PersonalMedia
 
 
-class Post(Base):
+class PersonalPost(Base):
     __tablename__ = "personal_posts"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
@@ -32,13 +32,13 @@ class Post(Base):
     dislike_count: Mapped[int] = mapped_column(Integer, default=0)
 
     user: Mapped[User] = relationship(back_populates="personal_posts")
-    media: Mapped[list[Media]] = relationship(
+    media: Mapped[list[PersonalMedia]] = relationship(
         back_populates="_post", cascade="all, delete-orphan", lazy="selectin"
     )
-    comments: Mapped[list[Comment]] = relationship(
+    comments: Mapped[list[PersonalComment]] = relationship(
         back_populates="_post", cascade="all, delete-orphan", lazy="selectin"
     )
-    _reactions: Mapped[list[Like]] = relationship(
+    _reactions: Mapped[list[PersonalLike]] = relationship(
         back_populates="_post", cascade="all, delete-orphan", lazy="selectin"
     )
 

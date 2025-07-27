@@ -11,6 +11,7 @@ from src.runner.db import Base
 if TYPE_CHECKING:
     from .category import Category
     from .category_tag import CategoryTag
+    from .post import Post
 
 
 class Reference(Base):
@@ -29,6 +30,12 @@ class Reference(Base):
     tags: Mapped[list["CategoryTag"]] = relationship(
         secondary=reference_category_tags,
         back_populates="references",
+        lazy="selectin",
+    )
+
+    posts: Mapped[list["Post"]] = relationship(
+        back_populates="reference",
+        cascade="all, delete",
         lazy="selectin",
     )
 

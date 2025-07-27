@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from src.core.errors import DoesNotExistError
 from src.core.feed import Reaction
 from src.core.personal_post.likes import Like
-from src.infra.models.personal_post.like import Like as LikeModel
+from src.infra.models.personal_post.like import PersonalLike as LikeModel
 
 
 @dataclass

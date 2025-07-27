@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from src.core.errors import DoesNotExistError
 from src.core.personal_post.comments import Comment
 from src.infra.models.personal_post.comment import (
-    Comment as CommentModel,
+    PersonalComment as CommentModel,
 )
 
 

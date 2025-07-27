@@ -10,9 +10,14 @@ from src.core.users import User as DomainUser
 from src.runner.db import Base
 
 if TYPE_CHECKING:
-    from .personal_post.comment import Comment
-    from .personal_post.like import Like
-    from .personal_post.post import Post
+    from .personal_post.comment import PersonalComment as PersonalComment
+    from .personal_post.like import PersonalLike as PersonalLike
+    from .personal_post.post import PersonalPost as PersonalPost
+
+from .creator_post.comment import Comment as CreatorComment
+from .creator_post.like import Like as CreatorLike
+from .creator_post.post import Post as CreatorPost
+from .creator_post.save import Save as CreatorSave
 
 
 class User(Base):
@@ -26,13 +31,25 @@ class User(Base):
     display_name: Mapped[str] = mapped_column(String)
     bio: Mapped[str | None] = mapped_column(String)
 
-    personal_posts: Mapped[list[Post]] = relationship(
+    personal_posts: Mapped[list[PersonalPost]] = relationship(
         back_populates="user", cascade="all, delete-orphan", lazy="selectin"
     )
-    _post_likes: Mapped[list[Like]] = relationship(
+    _personal_post_likes: Mapped[list[PersonalLike]] = relationship(
         back_populates="_user", cascade="all, delete-orphan", lazy="selectin"
     )
-    _post_comments: Mapped[list[Comment]] = relationship(
+    _personal_post_comments: Mapped[list[PersonalComment]] = relationship(
+        back_populates="_user", cascade="all, delete-orphan", lazy="selectin"
+    )
+    creator_posts: Mapped[list[CreatorPost]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", lazy="selectin"
+    )
+    _creator_post_likes: Mapped[list[CreatorLike]] = relationship(
+        back_populates="_user", cascade="all, delete-orphan", lazy="selectin"
+    )
+    _creator_post_comments: Mapped[list[CreatorComment]] = relationship(
+        back_populates="_user", cascade="all, delete-orphan", lazy="selectin"
+    )
+    _creator_post_saves: Mapped[list[CreatorSave]] = relationship(
         back_populates="_user", cascade="all, delete-orphan", lazy="selectin"
     )
 

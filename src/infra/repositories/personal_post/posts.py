@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from src.core.errors import DoesNotExistError
 from src.core.personal_post.posts import Post, Privacy
-from src.infra.models.personal_post.media import Media as MediaModel
-from src.infra.models.personal_post.post import Post as PostModel
+from src.infra.models.personal_post.media import PersonalMedia as MediaModel
+from src.infra.models.personal_post.post import PersonalPost as PostModel
 
 
 @dataclass

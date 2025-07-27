@@ -11,6 +11,14 @@ from src.infra.fastapi.personal_posts import personal_post_api
 from src.infra.fastapi.references import reference_api
 from src.infra.fastapi.social import social_api
 from src.infra.fastapi.users import user_api
+from src.infra.models.creator_post.comment import (
+    Comment as CreatorComment,  # noqa: F401
+)
+from src.infra.models.creator_post.hashtag import Hashtag  # noqa: F401
+from src.infra.models.creator_post.like import Like as CreatorLike  # noqa: F401
+from src.infra.models.creator_post.media import Media as CreatorMedia  # noqa: F401
+from src.infra.models.creator_post.post import Post as CreatorPost  # noqa: F401
+from src.infra.models.creator_post.save import Save as CreatorSave  # noqa: F401
 from src.infra.repositories.creator_post.categories import CategoryRepository
 from src.infra.repositories.creator_post.references import ReferenceRepository
 from src.infra.repositories.personal_post.comments import (
