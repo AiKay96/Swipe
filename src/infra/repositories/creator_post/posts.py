@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -174,3 +174,55 @@ class PostRepository:
                 self.db.delete(hashtag)
 
         self.db.commit()
+
+    def get_posts_by_users_in_category(
+        self,
+        user_ids: list[UUID],
+        category_id: UUID,
+        exclude_ids: list[UUID],
+        limit: int,
+        before: datetime,
+    ) -> list[Post]:
+        if not user_ids:
+            return []
+
+        query = self.db.query(PostModel).filter(
+            PostModel.user_id.in_(user_ids),
+            PostModel.category_id == category_id,
+            PostModel.created_at < before,
+        )
+
+        if exclude_ids:
+            query = query.filter(~PostModel.id.in_(exclude_ids))
+
+        posts = query.order_by(PostModel.created_at.desc()).limit(limit).all()
+
+        return [p.to_object() for p in posts]
+
+    def get_trending_posts_in_category(
+        self,
+        category_id: UUID,
+        exclude_user_ids: list[UUID],
+        exclude_post_ids: list[UUID],
+        limit: int,
+        days: int = 30,
+    ) -> list[Post]:
+        cutoff = datetime.now() - timedelta(days=days)
+
+        posts = (
+            self.db.query(PostModel)
+            .filter(
+                PostModel.category_id == category_id,
+                PostModel.created_at > cutoff,
+                ~PostModel.user_id.in_(exclude_user_ids),
+                ~PostModel.id.in_(exclude_post_ids),
+            )
+            .order_by(
+                (PostModel.like_count + PostModel.dislike_count).desc(),
+                PostModel.created_at.desc(),
+            )
+            .limit(limit)
+            .all()
+        )
+
+        return [p.to_object() for p in posts]

@@ -21,8 +21,14 @@ from src.infra.repositories.creator_post.categories import CategoryRepository
 from src.infra.repositories.creator_post.comments import (
     CommentRepository as CreatorPostCommentRepository,
 )
+from src.infra.repositories.creator_post.feed_preferences import (
+    FeedPreferenceRepository,
+)
 from src.infra.repositories.creator_post.likes import (
     LikeRepository as CreatorPostLikeRepository,
+)
+from src.infra.repositories.creator_post.post_interactions import (
+    PostInteractionRepository,
 )
 from src.infra.repositories.creator_post.posts import (
     PostRepository as CreatorPostRepository,
@@ -92,6 +98,8 @@ def init_app() -> FastAPI:
     creator_post_like_repo = CreatorPostLikeRepository(db)
     creator_post_comment_repo = CreatorPostCommentRepository(db)
     save_repo = SaveRepository(db)
+    feed_pref_repo = FeedPreferenceRepository(db)
+    post_init_repo = PostInteractionRepository(db)
 
     app.state.users = user_repo
     app.state.tokens = token_repo
@@ -108,9 +116,15 @@ def init_app() -> FastAPI:
         user_repo=user_repo,
     )
     app.state.feed = FeedService(
-        post_repo=personal_post_repo,
+        personal_post_repo=personal_post_repo,
         friend_repo=friend_repo,
-        like_repo=personal_post_like_repo,
+        personal_post_like_repo=personal_post_like_repo,
+        preference_repo=feed_pref_repo,
+        post_interaction_repo=post_init_repo,
+        follow_repo=follow_repo,
+        post_repo=creator_post_repo,
+        creator_post_like_repo=creator_post_like_repo,
+        save_repo=save_repo,
     )
     app.state.references = ReferenceService(
         reference_repo=reference_repo,
@@ -121,6 +135,7 @@ def init_app() -> FastAPI:
         like_repo=creator_post_like_repo,
         comment_repo=creator_post_comment_repo,
         save_repo=save_repo,
+        feed_pref_repo=feed_pref_repo,
     )
 
     app.include_router(user_api)

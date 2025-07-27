@@ -24,7 +24,17 @@ def test_should_get_feed_with_reactions() -> None:
         post2.id: Reaction.DISLIKE,
     }
 
-    service = FeedService(post_repo, friend_repo, like_repo)
+    service = FeedService(
+        post_repo,
+        friend_repo,
+        like_repo,
+        Mock(),
+        Mock(),
+        Mock(),
+        Mock(),
+        Mock(),
+        Mock(),
+    )
     result = service.get_personal_feed(user_id, before=datetime.now(), limit=10)
 
     assert isinstance(result, list)
@@ -48,7 +58,17 @@ def test_should_return_none_reaction_if_missing() -> None:
     post_repo.get_posts_by_users.return_value = [post]
     like_repo.get_user_reactions.return_value = {}
 
-    service = FeedService(post_repo, friend_repo, like_repo)
+    service = FeedService(
+        post_repo,
+        friend_repo,
+        like_repo,
+        Mock(),
+        Mock(),
+        Mock(),
+        Mock(),
+        Mock(),
+        Mock(),
+    )
     result = service.get_personal_feed(user_id, before=datetime.now(), limit=5)
 
     assert len(result) == 1
