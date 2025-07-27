@@ -5,6 +5,9 @@ from uuid import UUID, uuid4
 
 from faker import Faker
 
+from src.core.creator_post.categories import Category
+from src.core.creator_post.posts import Post as CreatorPost
+from src.core.creator_post.references import Reference
 from src.core.personal_post.comments import Comment as PersonalPostComment
 from src.core.personal_post.likes import Like as PersonalPostLike
 from src.core.personal_post.posts import Media, MediaType, Privacy
@@ -116,4 +119,75 @@ class FakePersonalPostLike:
             post_id=self.post_id,
             user_id=self.user_id,
             is_dislike=self.is_dislike,
+        )
+
+
+@dataclass(frozen=True)
+class FakeCategory:
+    name: str = "Movies"
+    tag_names: list[str] = field(default_factory=lambda: ["Drama", "Sci-fi"])
+    id: UUID = field(default_factory=uuid4)
+
+    def as_category(self) -> Category:
+        return Category(
+            id=self.id,
+            name=self.name,
+            tag_names=self.tag_names,
+        )
+
+
+@dataclass(frozen=True)
+class FakeReference:
+    title: str = "The Shawshank Redemption"
+    description: str = (
+        "Two imprisoned men bond over a number of years, finding "
+        + "solace and eventual redemption through acts of common decency."
+    )
+    image_url: str = (
+        "https://image.tmdb.org/t/p/original/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg"
+    )
+    tag_names: list[str] = field(default_factory=lambda: ["Drama"])
+    attributes: dict[str, Any] = field(
+        default_factory=lambda: {
+            "release_year": 1994,
+            "duration_minutes": 142,
+            "director": "Frank Darabont",
+        }
+    )
+
+    def as_reference(self) -> Reference:
+        return Reference(
+            title=self.title,
+            description=self.description,
+            image_url=self.image_url,
+            tag_names=self.tag_names,
+            attributes=self.attributes,
+        )
+
+
+@dataclass(frozen=True)
+class FakeCreatorPost:
+    user_id: UUID = field(default_factory=uuid4)
+    description: str = field(default_factory=lambda: _faker.sentence(nb_words=6))
+    like_count: int = 0
+    dislike_count: int = 0
+    category_id: UUID = field(default_factory=uuid4)
+    reference_id: UUID | None = None
+    created_at: datetime = field(default_factory=datetime.now)
+    category_tag_names: list[str] = field(default_factory=list)
+    hashtag_names: list[str] = field(default_factory=list)
+    id: UUID = field(default_factory=uuid4)
+
+    def as_post(self) -> CreatorPost:
+        return CreatorPost(
+            id=self.id,
+            user_id=self.user_id,
+            category_id=self.category_id,
+            reference_id=self.reference_id,
+            description=self.description,
+            like_count=self.like_count,
+            dislike_count=self.dislike_count,
+            created_at=self.created_at,
+            category_tag_names=self.category_tag_names,
+            hashtag_names=self.hashtag_names,
         )

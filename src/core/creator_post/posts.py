@@ -4,8 +4,6 @@ from enum import Enum
 from typing import Protocol
 from uuid import UUID, uuid4
 
-from src.core.creator_post.categories import Category
-
 from .comments import Comment
 
 
@@ -29,15 +27,20 @@ class Media:
 @dataclass
 class Post:
     user_id: UUID
-    category: Category | None = None
-    category_tag_names: list[str] = field(default_factory=list)
+    category_id: UUID | None = None
+    reference_id: UUID | None = None
     description: str = ""
+    created_at: datetime = field(default_factory=datetime.now)
+
     like_count: int = 0
     dislike_count: int = 0
-    created_at: datetime = field(default_factory=datetime.now)
+
+    category_tag_names: list[str] = field(default_factory=list)
+    hashtag_names: list[str] = field(default_factory=list)
+
     media: list[Media] = field(default_factory=list)
     comments: list[Comment] = field(default_factory=list)
-    hashtag_names: list[str] = field(default_factory=list)
+
     id: UUID = field(default_factory=uuid4)
 
 
@@ -90,6 +93,10 @@ class CreatorPostService(Protocol):
     def remove_comment(
         self, post_id: UUID, comment_id: UUID, user_id: UUID
     ) -> None: ...
+
+    def save_post(self, user_id: UUID, post_id: UUID) -> None: ...
+
+    def remove_save(self, user_id: UUID, post_id: UUID) -> None: ...
 
     def get_user_posts(
         self,
