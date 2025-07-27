@@ -7,7 +7,6 @@ from src.core.creator_post.likes import Like, LikeRepository
 from src.core.creator_post.posts import Media, Post, PostRepository
 from src.core.creator_post.saves import Save, SaveRepository
 from src.core.errors import DoesNotExistError
-from src.infra.repositories.social import FriendRepository
 
 
 @dataclass
@@ -15,7 +14,6 @@ class CreatorPostService:
     post_repo: PostRepository
     like_repo: LikeRepository
     comment_repo: CommentRepository
-    friend_repo: FriendRepository
     save_repo: SaveRepository
 
     def create_post(

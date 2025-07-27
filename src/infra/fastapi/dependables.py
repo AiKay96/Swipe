@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 
+from src.core.creator_post.posts import CreatorPostService
 from src.core.creator_post.references import ReferenceService
 from src.core.feed import FeedService
 from src.core.personal_post.posts import PersonalPostService
@@ -32,6 +33,15 @@ def get_personal_post_service(request: Request) -> PersonalPostService:
 
 PersonalPostServiceDependable = Annotated[
     PersonalPostService, Depends(get_personal_post_service)
+]
+
+
+def get_creator_post_service(request: Request) -> CreatorPostService:
+    return request.app.state.creator_posts  # type: ignore
+
+
+CreatorPostServiceDependable = Annotated[
+    CreatorPostService, Depends(get_creator_post_service)
 ]
 
 

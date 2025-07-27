@@ -16,6 +16,16 @@ from src.infra.models.personal_post.comment import PersonalComment
 from src.infra.models.personal_post.like import PersonalLike
 from src.infra.models.personal_post.media import PersonalMedia
 
+from src.infra.models.creator_post.post import Post as CreatorPost
+from src.infra.models.creator_post.comment import Comment as CreatorPostComment
+from src.infra.models.creator_post.like import Like as CreatorPostLike
+from src.infra.models.creator_post.media import Media as CreatorPostMedia
+from src.infra.models.creator_post.hashtag import Hashtag as CreatorPostHashtag
+from src.infra.models.creator_post.save import Save as CreatorPostSave
+from src.infra.models.creator_post.category_tag import CategoryTag
+from src.infra.models.creator_post.reference import Reference
+from src.infra.models.creator_post.category import Category
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
