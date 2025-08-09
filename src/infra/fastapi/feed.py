@@ -59,3 +59,25 @@ def get_personal_feed(
         }
     except Exception as e:
         return exception_response(e)
+
+
+@feed_api.get("/creator_feed/by_category", response_model=FeedResponse, status_code=200)
+def get_creator_feed_by_category(
+    service: FeedServiceDependable,
+    category_id: UUID,
+    before: datetime | None = None,
+    limit: int = Query(20, ge=1, le=50),
+    user: User = Depends(get_current_user),  # noqa: B008
+) -> dict[str, Any] | JSONResponse:
+    try:
+        if not before:
+            before = datetime.now()
+        posts = service.get_creator_feed_by_category(
+            user_id=user.id,
+            category_id=category_id,
+            before=before,
+            limit=limit,
+        )
+        return {"posts": [FeedPostItem.from_feed_post(p) for p in posts]}
+    except Exception as e:
+        return exception_response(e)

@@ -29,3 +29,11 @@ class FeedService(Protocol):
     def get_creator_feed(
         self, user_id: UUID, before: datetime, limit: int
     ) -> list[FeedPost]: ...
+
+    def get_creator_feed_by_category(
+        self,
+        user_id: UUID,
+        category_id: UUID,
+        before: datetime,
+        limit: int = 20,
+    ) -> list[FeedPost]: ...
