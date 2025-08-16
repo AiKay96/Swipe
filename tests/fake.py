@@ -193,6 +193,24 @@ class FakeCreatorPost:
             hashtag_names=self.hashtag_names,
         )
 
+    def as_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "description": self.description,
+            "media": [
+                {
+                    "url": "https://example.com/test.jpg",
+                    "media_type": MediaType.IMAGE.value,
+                }
+            ],
+            "category_tag_names": list(self.category_tag_names),
+            "hashtag_names": list(self.hashtag_names),
+        }
+        if self.category_id is not None:
+            payload["category_id"] = str(self.category_id)
+        if self.reference_id is not None:
+            payload["reference_id"] = str(self.reference_id)
+        return payload
+
 
 @dataclass(frozen=True)
 class FakeSave:
