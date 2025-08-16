@@ -1,6 +1,7 @@
 import random
 from dataclasses import dataclass
 from datetime import datetime
+from math import ceil
 from uuid import UUID
 
 from src.core.creator_post.likes import LikeRepository as CreatorPostLikeRepository
@@ -16,6 +17,9 @@ from src.infra.repositories.creator_post.post_interactions import (
     PostInteractionRepository,
 )
 from src.infra.repositories.social import FollowRepository, FriendRepository
+
+PER_CATEGORY_HARD_CAP = 12
+FETCH_PER_CATEGORY = 40
 
 
 @dataclass
@@ -116,3 +120,58 @@ class FeedService:
 
         random.shuffle(result)
         return result[:limit]
+
+    def get_creator_feed(
+        self,
+        user_id: UUID,
+        before: datetime,
+        limit: int = 30,
+        top_k_categories: int = 5,
+    ) -> list[FeedPost]:
+        if limit <= 0:
+            return []
+
+        cat_weights: list[tuple[UUID, int]] = (
+            self.preference_repo.get_top_categories_with_points(
+                user_id=user_id, limit=top_k_categories
+            )
+        )
+
+        normalized = self._normalize_weights(cat_weights)
+        if not normalized:
+            return self._trending_creator_feed()
+
+        posts: list[FeedPost] = []
+        for cid, w in normalized:
+            target = ceil(limit * w)
+
+            if target <= 0:
+                continue
+
+            fps = self.get_creator_feed_by_category(
+                user_id=user_id,
+                category_id=cid,
+                before=before,
+                limit=target,
+            )
+            posts.extend(fps)
+
+        random.shuffle(posts)
+        return posts[:limit]
+
+    def _normalize_weights(
+        self, weights: list[tuple[UUID, int]]
+    ) -> list[tuple[UUID, float]]:
+        if not weights:
+            return []
+
+        cleaned = [(cid, points + 1 if points >= 0 else 0) for cid, points in weights]
+        total = sum(points for _, points in cleaned)
+
+        if total <= 0:
+            return []
+
+        return [(cid, points / total) for cid, points in cleaned]
+
+    def _trending_creator_feed(self) -> list[FeedPost]:
+        return []
