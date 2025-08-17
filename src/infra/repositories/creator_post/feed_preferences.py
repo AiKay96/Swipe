@@ -25,16 +25,6 @@ class FeedPreferenceRepository:
             self.db.add(pref)
         self.db.commit()
 
-    def get_top_categories(self, user_id: UUID, limit: int = 5) -> list[UUID]:
-        return [
-            row.category_id
-            for row in self.db.query(FeedPreference)
-            .filter_by(user_id=user_id)
-            .order_by(FeedPreference.points.desc())
-            .limit(limit)
-            .all()
-        ]
-
     def get_top_categories_with_points(
         self, user_id: UUID, limit: int = 5
     ) -> list[tuple[UUID, int]]:
