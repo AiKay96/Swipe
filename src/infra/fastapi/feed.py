@@ -6,33 +6,41 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from src.core.creator_post.posts import Post as CreatorPost
 from src.core.feed import FeedPost, Reaction
+from src.core.personal_post.posts import Post as PersonalPost
 from src.core.users import User
+from src.infra.fastapi.creator_posts import (
+    PostItem as CreatorPostItem,
+)
 from src.infra.fastapi.dependables import FeedServiceDependable, get_current_user
+from src.infra.fastapi.personal_posts import (
+    PostItem as PersonalPostItem,
+)
 from src.infra.fastapi.utils import exception_response
 
 feed_api = APIRouter(tags=["Feed"])
 
 
 class FeedPostItem(BaseModel):
-    id: UUID
-    user_id: UUID
-    description: str
-    created_at: datetime
-    like_count: int
-    dislike_count: int
+    post: PersonalPostItem | CreatorPostItem
+    is_saved: bool | None = None
     reaction: Reaction
 
     @classmethod
     def from_feed_post(cls, feed_post: FeedPost) -> "FeedPostItem":
-        post = feed_post.post
+        p = feed_post.post
+
+        if isinstance(p, CreatorPost):
+            post_item = CreatorPostItem.from_post(p)
+        elif isinstance(p, PersonalPost):
+            post_item = PersonalPostItem.from_post(p)
+        else:
+            raise TypeError(f"Unsupported post type: {type(p)!r}")
+
         return cls(
-            id=post.id,
-            user_id=post.user_id,
-            description=post.description,
-            created_at=post.created_at,
-            like_count=post.like_count,
-            dislike_count=post.dislike_count,
+            post=post_item,
+            is_saved=feed_post.is_saved,
             reaction=feed_post.reaction,
         )
 
