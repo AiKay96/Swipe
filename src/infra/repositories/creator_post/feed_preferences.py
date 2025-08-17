@@ -3,12 +3,26 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from src.infra.models.creator_post.category import Category as CategoryModel
 from src.infra.models.creator_post.feed_preference import FeedPreference
 
 
 @dataclass
 class FeedPreferenceRepository:
     db: Session
+
+    def init_user_preferences(self, user_id: UUID) -> None:
+        category_ids = [cid for (cid,) in self.db.query(CategoryModel.id).all()]
+        if not category_ids:
+            return
+
+        self.db.add_all(
+            [
+                FeedPreference(user_id=user_id, category_id=cid, points=0)
+                for cid in category_ids
+            ]
+        )
+        self.db.commit()
 
     def add_points(self, user_id: UUID, category_id: UUID, delta: int) -> None:
         pref = (

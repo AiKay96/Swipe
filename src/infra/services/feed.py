@@ -34,6 +34,9 @@ class FeedService:
     save_repo: SaveRepository
     creator_post_like_repo: CreatorPostLikeRepository
 
+    def init_preferences(self, user_id: UUID) -> None:
+        self.preference_repo.init_user_preferences(user_id)
+
     def get_personal_feed(
         self, user_id: UUID, before: datetime, limit: int
     ) -> list[FeedPost]:

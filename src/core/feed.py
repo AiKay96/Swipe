@@ -22,6 +22,8 @@ class FeedPost:
 
 
 class FeedService(Protocol):
+    def init_preferences(self, user_id: UUID) -> None: ...
+
     def get_personal_feed(
         self, user_id: UUID, before: datetime, limit: int
     ) -> list[FeedPost]: ...
@@ -37,3 +39,13 @@ class FeedService(Protocol):
         before: datetime,
         limit: int = 20,
     ) -> list[FeedPost]: ...
+
+
+class FeedPreferenceRepository(Protocol):
+    def init_user_preferences(self, user_id: UUID) -> None: ...
+
+    def add_points(self, user_id: UUID, category_id: UUID, delta: int) -> None: ...
+
+    def get_top_categories_with_points(
+        self, user_id: UUID, limit: int = 5
+    ) -> list[tuple[UUID, int]]: ...

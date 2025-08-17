@@ -10,6 +10,7 @@ from src.core.errors import DoesNotExistError, ExistsError
 from src.core.social import FriendStatus
 from src.core.users import User
 from src.infra.fastapi.dependables import (
+    FeedServiceDependable,
     SocialServiceDependable,
     UserRepositoryDependable,
     get_current_user,
@@ -124,11 +125,14 @@ class UserUpdateRequest(BaseModel):
     response_model=MeItemEnvelope,
 )
 def register(
-    request: CreateUserRequest, users: UserRepositoryDependable
+    request: CreateUserRequest,
+    users: UserRepositoryDependable,
+    feed: FeedServiceDependable,
 ) -> dict[str, Any] | JSONResponse:
     try:
         service = UserService(users)
         user = service.register(request.mail, request.password)
+        feed.init_preferences(user.id)
         return {"user": MeItem.from_user(user)}
 
     except ExistsError:
