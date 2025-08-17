@@ -31,6 +31,7 @@ class FeedPostItem(BaseModel):
     def from_feed_post(cls, feed_post: FeedPost) -> "FeedPostItem":
         p = feed_post.post
 
+        post_item: PersonalPostItem | CreatorPostItem
         if isinstance(p, CreatorPost):
             post_item = CreatorPostItem.from_post(p)
         elif isinstance(p, PersonalPost):

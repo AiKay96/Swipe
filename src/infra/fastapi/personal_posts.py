@@ -237,10 +237,10 @@ def delete_comment(
 
 
 @personal_post_api.get(
-    "/users/{user_id}/posts",
+    "/users/{user_id}/personal_posts",
     response_model=PostListEnvelope,
 )
-def get_user_posts(
+def get_user_personal_posts(
     user_id: UUID,
     service: PersonalPostServiceDependable,
     before: datetime | None = None,

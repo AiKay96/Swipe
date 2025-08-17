@@ -97,7 +97,7 @@ class CreatorPostService(Protocol):
         self,
         user_id: UUID,
         category_id: UUID,
-        reference_id: UUID,
+        reference_id: UUID | None,
         description: str,
         category_tag_names: list[str],
         hashtag_names: list[str],

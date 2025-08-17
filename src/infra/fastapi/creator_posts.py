@@ -24,7 +24,7 @@ class MediaInput(BaseModel):
 
 class CreatePostRequest(BaseModel):
     category_id: UUID
-    reference_id: UUID
+    reference_id: UUID | None
     description: str
     category_tag_names: list[str]
     hashtag_names: list[str]
@@ -250,10 +250,10 @@ def delete_comment(
 
 
 @creator_post_api.get(
-    "/users/{user_id}/posts",
+    "/users/{user_id}/creator_posts",
     response_model=PostListEnvelope,
 )
-def get_user_posts(
+def get_user_creator_posts(
     user_id: UUID,
     service: CreatorPostServiceDependable,
     before: datetime | None = None,

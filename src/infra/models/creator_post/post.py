@@ -94,6 +94,8 @@ class Post(Base):
         return DomainPost(
             id=self.id,
             user_id=self.user_id,
+            category_id=self.category_id,
+            reference_id=self.reference_id,
             description=self.description,
             created_at=self.created_at,
             like_count=self.like_count,
