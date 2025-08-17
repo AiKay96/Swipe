@@ -138,9 +138,6 @@ class FeedService:
         )
 
         normalized = self._normalize_weights(cat_weights)
-        if not normalized:
-            return self._trending_creator_feed()
-
         posts: list[FeedPost] = []
         for cid, w in normalized:
             target = ceil(limit * w)
@@ -172,6 +169,3 @@ class FeedService:
             return []
 
         return [(cid, points / total) for cid, points in cleaned]
-
-    def _trending_creator_feed(self) -> list[FeedPost]:
-        return []
