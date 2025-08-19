@@ -73,7 +73,7 @@ def test_should_get_user_posts(test_client: TestClient, user: FakeUser) -> None:
     ).json()["post"]
     test_client.post(f"/posts/{post['id']}/privacy")
     r = test_client.get(
-        f"/users/{user.id}/posts",
+        f"/users/{user.id}/personal_posts",
         params={"before": datetime.now().isoformat(), "limit": 10},
     )
 

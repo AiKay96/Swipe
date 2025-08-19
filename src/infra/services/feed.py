@@ -5,10 +5,12 @@ from math import ceil
 from uuid import UUID
 
 from src.core.creator_post.likes import LikeRepository as CreatorPostLikeRepository
-from src.core.creator_post.posts import Post, PostRepository
+from src.core.creator_post.posts import Post as CreatorPost
+from src.core.creator_post.posts import PostRepository
 from src.core.creator_post.saves import SaveRepository
 from src.core.feed import FeedPost, Reaction
 from src.core.personal_post.likes import LikeRepository as PersonalPostLikeRepository
+from src.core.personal_post.posts import Post as PersonalPost
 from src.core.personal_post.posts import PostRepository as PersonalPostRepository
 from src.infra.repositories.creator_post.feed_preferences import (
     FeedPreferenceRepository,
@@ -42,13 +44,7 @@ class FeedService:
     ) -> list[FeedPost]:
         friend_ids = self.friend_repo.get_friend_ids(user_id)
         posts = self.personal_post_repo.get_posts_by_users(friend_ids, before, limit)
-        reactions = self.personal_post_like_repo.get_user_reactions(
-            user_id, [p.id for p in posts]
-        )
-
-        return [
-            FeedPost(post=p, reaction=reactions.get(p.id, Reaction.NONE)) for p in posts
-        ]
+        return self._decorate_posts(user_id=user_id, posts=posts, is_creator=False)
 
     def get_creator_feed_by_category(
         self,
@@ -82,29 +78,19 @@ class FeedService:
             limit=limit,
         )
 
-        saved_ids = set(
-            self.save_repo.get_user_saves_for_posts(user_id, [p.id for p in posts])
+        return self._decorate_posts(
+            user_id=user_id,
+            posts=posts,
+            is_creator=True,
         )
-        reactions = self.creator_post_like_repo.get_user_reactions(
-            user_id, [p.id for p in posts]
-        )
-
-        return [
-            FeedPost(
-                post=p,
-                reaction=reactions.get(p.id, Reaction.NONE),
-                is_saved=p.id in saved_ids,
-            )
-            for p in posts
-        ]
 
     def _mix_category_feed(
         self,
-        followed: list[Post],
-        trending: list[Post],
-        interacted: list[Post],
+        followed: list[CreatorPost],
+        trending: list[CreatorPost],
+        interacted: list[CreatorPost],
         limit: int,
-    ) -> list[Post]:
+    ) -> list[CreatorPost]:
         result = []
 
         random.shuffle(followed)
@@ -172,3 +158,30 @@ class FeedService:
             return []
 
         return [(cid, points / total) for cid, points in cleaned]
+
+    def _decorate_posts(
+        self,
+        user_id: UUID,
+        posts: list[PersonalPost] | list[CreatorPost],
+        *,
+        is_creator: bool,
+    ) -> list[FeedPost]:
+        if not posts:
+            return []
+
+        ids = [p.id for p in posts]
+
+        if is_creator:
+            reactions = self.creator_post_like_repo.get_user_reactions(user_id, ids)
+            saved_ids = set(self.save_repo.get_user_saves_for_posts(user_id, ids))
+        else:
+            reactions = self.personal_post_like_repo.get_user_reactions(user_id, ids)
+
+        return [
+            FeedPost(
+                post=p,
+                reaction=reactions.get(p.id, Reaction.NONE),
+                is_saved=(p.id in saved_ids if is_creator else None),
+            )
+            for p in posts
+        ]
