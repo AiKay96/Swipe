@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -17,6 +18,8 @@ class Settings:
     )
     reftesh_token_expire_days: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_DAYS", "90"))
     base_url: str = os.getenv("BASE_URL", "http://localhost:8000")
+
+    media_root: Path = Path(os.getenv("MEDIA_ROOT", "var/media"))
 
 
 settings = Settings()

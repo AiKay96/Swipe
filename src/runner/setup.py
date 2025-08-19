@@ -2,12 +2,14 @@ from collections.abc import Generator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.infra.fastapi.auth import auth_api
 from src.infra.fastapi.creator_posts import creator_post_api
 from src.infra.fastapi.feed import feed_api
+from src.infra.fastapi.media import media_api
 from src.infra.fastapi.personal_posts import personal_post_api
 from src.infra.fastapi.references import reference_api
 from src.infra.fastapi.social import social_api
@@ -71,6 +73,7 @@ def init_app() -> FastAPI:
     Base.metadata.create_all(bind=engine)
 
     app = FastAPI()
+    app.mount("/media", StaticFiles(directory=str(settings.media_root)), name="media")
 
     app.add_middleware(
         CORSMiddleware,
@@ -145,5 +148,6 @@ def init_app() -> FastAPI:
     app.include_router(social_api)
     app.include_router(feed_api)
     app.include_router(reference_api)
+    app.include_router(media_api)
 
     return app
