@@ -80,6 +80,7 @@ class MediaItem(BaseModel):
 class PostItem(BaseModel):
     id: UUID
     user_id: UUID
+    username: str
     description: str
     privacy: Privacy
     like_count: int
@@ -92,6 +93,7 @@ class PostItem(BaseModel):
         return cls(
             id=post.id,
             user_id=post.user_id,
+            username=post.username if post.username else "Unknown",
             description=post.description,
             privacy=post.privacy,
             like_count=post.like_count,

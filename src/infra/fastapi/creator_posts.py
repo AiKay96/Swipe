@@ -72,8 +72,11 @@ class MediaItem(BaseModel):
 class PostItem(BaseModel):
     id: UUID
     user_id: UUID
+    username: str
     category_id: UUID | None
+    category_name: str | None
     reference_id: UUID | None
+    reference_title: str | None
     description: str
     like_count: int
     dislike_count: int
@@ -85,8 +88,11 @@ class PostItem(BaseModel):
         return cls(
             id=post.id,
             user_id=post.user_id,
+            username=post.username if post.username else "Unknown",
             category_id=post.category_id,
+            category_name=post.category_name,
             reference_id=post.reference_id,
+            reference_title=post.reference_title,
             description=post.description,
             like_count=post.like_count,
             dislike_count=post.dislike_count,

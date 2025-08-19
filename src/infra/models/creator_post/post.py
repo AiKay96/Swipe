@@ -104,4 +104,7 @@ class Post(Base):
             comments=[c.to_object() for c in self.comments],
             category_tag_names=self.category_tag_names,
             hashtag_names=self.hashtag_names,
+            category_name=self.category.name if self.category else None,
+            reference_title=self.reference.title if self.reference else None,
+            username=self.user.username,
         )

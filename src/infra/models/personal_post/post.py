@@ -60,6 +60,7 @@ class PersonalPost(Base):
         return DomainPost(
             id=self.id,
             user_id=self.user_id,
+            username=self.user.username if self.user else None,
             description=self.description,
             created_at=self.created_at,
             privacy=Privacy(self.privacy),

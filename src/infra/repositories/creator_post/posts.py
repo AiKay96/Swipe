@@ -2,10 +2,11 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session, selectinload
 
 from src.core.creator_post.posts import Post
 from src.core.errors import DoesNotExistError, ForbiddenError
+from src.infra.models.creator_post.category import Category
 from src.infra.models.creator_post.category_tag import CategoryTag
 from src.infra.models.creator_post.hashtag import (
     Hashtag as HashtagModel,
@@ -16,11 +17,24 @@ from src.infra.models.creator_post.hashtag import (
 from src.infra.models.creator_post.media import Media as MediaModel
 from src.infra.models.creator_post.post import Post as PostModel
 from src.infra.models.creator_post.reference import Reference
+from src.infra.models.creator_post.reference import Reference as ReferenceModel
+from src.infra.models.user import User
 
 
 @dataclass
 class PostRepository:
     db: Session
+
+    def _with_eager(self, query: Query[PostModel]) -> Query[PostModel]:
+        return query.options(
+            selectinload(PostModel.user).load_only(User.id, User.username),
+            selectinload(PostModel.category).load_only(Category.id, Category.name),
+            selectinload(PostModel.reference).load_only(
+                ReferenceModel.id, ReferenceModel.title
+            ),
+            selectinload(PostModel.media),
+            selectinload(PostModel.comments),
+        )
 
     def create(self, post: Post) -> Post:
         if post.category_id:
@@ -80,11 +94,17 @@ class PostRepository:
         ]
 
         self.db.commit()
-        self.db.refresh(db_post)
-        return db_post.to_object()
+        refetched = (
+            self._with_eager(self.db.query(PostModel)).filter_by(id=db_post.id).first()
+        )
+        if refetched is None:
+            raise DoesNotExistError("Post not found after create.")
+        return refetched.to_object()
 
     def get(self, post_id: UUID) -> Post | None:
-        db_post = self.db.query(PostModel).filter_by(id=post_id).first()
+        db_post = (
+            self._with_eager(self.db.query(PostModel)).filter_by(id=post_id).first()
+        )
         return db_post.to_object() if db_post else None
 
     def get_posts_by_user(
@@ -94,7 +114,7 @@ class PostRepository:
         before: datetime,
     ) -> list[Post]:
         posts = (
-            self.db.query(PostModel)
+            self._with_eager(self.db.query(PostModel))
             .filter(
                 PostModel.user_id == user_id,
                 PostModel.created_at < before,
@@ -115,7 +135,7 @@ class PostRepository:
         if not user_ids:
             return []
 
-        query = self.db.query(PostModel).filter(
+        query = self._with_eager(self.db.query(PostModel)).filter(
             PostModel.user_id.in_(user_ids),
             PostModel.created_at < before,
         )
@@ -124,14 +144,13 @@ class PostRepository:
             query = query.filter(PostModel.category_id == category_filter)
 
         posts = query.order_by(PostModel.created_at.desc()).limit(limit).all()
-
         return [p.to_object() for p in posts]
 
     def get_saved_posts_by_user(
         self, user_id: UUID, limit: int, before: datetime
     ) -> list[Post]:
         posts = (
-            self.db.query(PostModel)
+            self._with_eager(self.db.query(PostModel))
             .join(PostModel._saves)
             .filter(
                 PostModel._saves.any(user_id=user_id),
@@ -160,7 +179,6 @@ class PostRepository:
             raise DoesNotExistError("Post not found.")
 
         hashtags = list(post.hashtags)
-
         self.db.delete(post)
         self.db.commit()
 
@@ -186,7 +204,7 @@ class PostRepository:
         if not user_ids:
             return []
 
-        query = self.db.query(PostModel).filter(
+        query = self._with_eager(self.db.query(PostModel)).filter(
             PostModel.user_id.in_(user_ids),
             PostModel.category_id == category_id,
             PostModel.created_at < before,
@@ -196,7 +214,6 @@ class PostRepository:
             query = query.filter(~PostModel.id.in_(exclude_ids))
 
         posts = query.order_by(PostModel.created_at.desc()).limit(limit).all()
-
         return [p.to_object() for p in posts]
 
     def get_trending_posts_in_category(
@@ -210,7 +227,7 @@ class PostRepository:
         cutoff = datetime.now() - timedelta(days=days)
 
         posts = (
-            self.db.query(PostModel)
+            self._with_eager(self.db.query(PostModel))
             .filter(
                 PostModel.category_id == category_id,
                 PostModel.created_at > cutoff,
@@ -224,5 +241,4 @@ class PostRepository:
             .limit(limit)
             .all()
         )
-
         return [p.to_object() for p in posts]

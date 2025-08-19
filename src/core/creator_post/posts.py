@@ -27,8 +27,11 @@ class Media:
 @dataclass
 class Post:
     user_id: UUID
+
     category_id: UUID | None = None
+    category_name: str | None = None
     reference_id: UUID | None = None
+    reference_title: str | None = None
     description: str = ""
     created_at: datetime = field(default_factory=datetime.now)
 
@@ -40,6 +43,7 @@ class Post:
 
     media: list[Media] = field(default_factory=list)
     comments: list[Comment] = field(default_factory=list)
+    username: str | None = None
 
     id: UUID = field(default_factory=uuid4)
 

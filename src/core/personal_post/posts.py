@@ -27,6 +27,7 @@ class Media:
 @dataclass
 class Post:
     user_id: UUID
+    username: str | None = None
     description: str = ""
     like_count: int = 0
     dislike_count: int = 0
