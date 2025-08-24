@@ -1,5 +1,5 @@
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from math import ceil
 from uuid import UUID
@@ -19,9 +19,14 @@ from src.infra.repositories.creator_post.post_interactions import (
     PostInteractionRepository,
 )
 from src.infra.repositories.social import FollowRepository, FriendRepository
+from src.infra.services.cache import Cache
 
 PER_CATEGORY_HARD_CAP = 12
 FETCH_PER_CATEGORY = 40
+
+
+def _minute_bucket(dt: datetime) -> str:
+    return dt.replace(second=0, microsecond=0).isoformat(timespec="minutes")
 
 
 @dataclass
@@ -35,6 +40,13 @@ class FeedService:
     post_repo: PostRepository
     save_repo: SaveRepository
     creator_post_like_repo: CreatorPostLikeRepository
+    _cache: Cache = field(default_factory=Cache)
+
+    _ttl_creator_ids_by_cat: int = 120
+    _ttl_creator_ids_agg: int = 180
+    _ttl_post_obj: int = 90
+    _ttl_follow_ids: int = 180
+    _ttl_topcats: int = 420
 
     def init_preferences(self, user_id: UUID) -> None:
         self.preference_repo.init_user_preferences(user_id)
@@ -53,11 +65,18 @@ class FeedService:
         before: datetime,
         limit: int = 20,
     ) -> list[FeedPost]:
+        ids_key = self._key_creator_ids_by_cat(user_id, category_id, before, limit)
+        cached_ids = self._cache.get(ids_key)
+        if cached_ids is not None:
+            posts = self._batch_get_creator_posts_with_cache(cached_ids)
+            return self._decorate_posts(user_id=user_id, posts=posts, is_creator=True)
+
         interacted_posts = self.post_interaction_repo.get_recent_interacted_posts(
             user_id
         )
         interacted_post_ids = [p.id for p in interacted_posts]
-        followed_user_ids = self.follow_repo.get_following(user_id)
+        followed_user_ids = self._cached_follow_ids(user_id)
+
         followed_posts = self.post_repo.get_posts_by_users_in_category(
             user_ids=followed_user_ids,
             category_id=category_id,
@@ -78,11 +97,61 @@ class FeedService:
             limit=limit,
         )
 
-        return self._decorate_posts(
-            user_id=user_id,
-            posts=posts,
-            is_creator=True,
+        ids = [p.id for p in posts]
+        self._cache.set(ids_key, ids, self._ttl_creator_ids_by_cat)
+
+        return self._decorate_posts(user_id=user_id, posts=posts, is_creator=True)
+
+    def get_creator_feed(
+        self,
+        user_id: UUID,
+        before: datetime,
+        limit: int = 30,
+        top_k_categories: int = 5,
+    ) -> list[FeedPost]:
+        if limit <= 0:
+            return []
+        agg_key = self._key_creator_ids_agg(user_id, before, limit, top_k_categories)
+        cached_ids = self._cache.get(agg_key)
+        if cached_ids is not None:
+            posts = self._batch_get_creator_posts_with_cache(cached_ids)
+            random.shuffle(posts)
+            return self._decorate_posts(
+                user_id=user_id, posts=posts[:limit], is_creator=True
+            )
+
+        cat_weights: list[tuple[UUID, int]] = self._cached_top_categories(
+            user_id, top_k_categories
         )
+        normalized = self._normalize_weights(cat_weights)
+
+        all_posts: list[FeedPost] = []
+        all_ids: list[UUID] = []
+
+        for cid, w in normalized:
+            target = ceil(limit * w)
+            if target <= 0:
+                continue
+            chunk = self.get_creator_feed_by_category(
+                user_id=user_id,
+                category_id=cid,
+                before=before,
+                limit=target,
+            )
+            all_posts.extend(chunk)
+            all_ids.extend([fp.post.id for fp in chunk])
+
+        seen: set[UUID] = set()
+        deduped_ids: list[UUID] = []
+        for pid in all_ids:
+            if pid not in seen:
+                seen.add(pid)
+                deduped_ids.append(pid)
+
+        self._cache.set(agg_key, deduped_ids, self._ttl_creator_ids_agg)
+
+        random.shuffle(all_posts)
+        return all_posts[:limit]
 
     def _mix_category_feed(
         self,
@@ -109,41 +178,6 @@ class FeedService:
 
         random.shuffle(result)
         return result[:limit]
-
-    def get_creator_feed(
-        self,
-        user_id: UUID,
-        before: datetime,
-        limit: int = 30,
-        top_k_categories: int = 5,
-    ) -> list[FeedPost]:
-        if limit <= 0:
-            return []
-
-        cat_weights: list[tuple[UUID, int]] = (
-            self.preference_repo.get_top_categories_with_points(
-                user_id=user_id, limit=top_k_categories
-            )
-        )
-
-        normalized = self._normalize_weights(cat_weights)
-        posts: list[FeedPost] = []
-        for cid, w in normalized:
-            target = ceil(limit * w)
-
-            if target <= 0:
-                continue
-
-            fps = self.get_creator_feed_by_category(
-                user_id=user_id,
-                category_id=cid,
-                before=before,
-                limit=target,
-            )
-            posts.extend(fps)
-
-        random.shuffle(posts)
-        return posts[:limit]
 
     def _normalize_weights(
         self, weights: list[tuple[UUID, int]]
@@ -185,3 +219,70 @@ class FeedService:
             )
             for p in posts
         ]
+
+    def _key_creator_ids_by_cat(
+        self, user_id: UUID, category_id: UUID, before: datetime, limit: int
+    ) -> str:
+        return (
+            f"creator_ids_by_cat:{user_id}:{category_id}:"
+            f"{_minute_bucket(before)}:limit{limit}"
+        )
+
+    def _key_creator_ids_agg(
+        self, user_id: UUID, before: datetime, limit: int, topk: int
+    ) -> str:
+        return (
+            f"creator_ids_agg:{user_id}:{_minute_bucket(before)}:"
+            f"limit{limit}:topk{topk}"
+        )
+
+    def _key_post_obj(self, post_id: UUID) -> str:
+        return f"post_obj:{post_id}"
+
+    def _key_follow_ids(self, user_id: UUID) -> str:
+        return f"follow_ids:{user_id}"
+
+    def _key_topcats(self, user_id: UUID, k: int) -> str:
+        return f"topcats:{user_id}:k{k}"
+
+    def _cached_follow_ids(self, user_id: UUID) -> list[UUID]:
+        key = self._key_follow_ids(user_id)
+        cached = self._cache.get(key)
+        if cached is not None:
+            return cached  # type: ignore[no-any-return]
+        followed_user_ids = self.follow_repo.get_following(user_id)
+        self._cache.set(key, followed_user_ids, self._ttl_follow_ids)
+        return followed_user_ids
+
+    def _cached_top_categories(self, user_id: UUID, k: int) -> list[tuple[UUID, int]]:
+        key = self._key_topcats(user_id, k)
+        cached = self._cache.get(key)
+        if cached is not None:
+            return cached  # type: ignore[no-any-return]
+        rows = self.preference_repo.get_top_categories_with_points(
+            user_id=user_id, limit=k
+        )
+        self._cache.set(key, rows, self._ttl_topcats)
+        return rows
+
+    def _batch_get_creator_posts_with_cache(self, ids: list[UUID]) -> list[CreatorPost]:
+        if not ids:
+            return []
+
+        found: dict[UUID, CreatorPost] = {}
+        missing: list[UUID] = []
+
+        for pid in ids:
+            obj = self._cache.get(self._key_post_obj(pid))
+            if obj is None:
+                missing.append(pid)
+            else:
+                found[pid] = obj
+
+        if missing:
+            fetched = self.post_repo.batch_get(missing)
+            for p in fetched:
+                found[p.id] = p
+                self._cache.set(self._key_post_obj(p.id), p, self._ttl_post_obj)
+
+        return [found[pid] for pid in ids if pid in found]

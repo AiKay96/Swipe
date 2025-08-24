@@ -53,6 +53,8 @@ class PostRepository(Protocol):
 
     def get(self, post_id: UUID) -> Post | None: ...
 
+    def batch_get(self, ids: list[UUID]) -> list[Post]: ...
+
     def update_like_counts(
         self,
         post_id: UUID,

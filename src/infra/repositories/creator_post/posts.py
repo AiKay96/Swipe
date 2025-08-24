@@ -107,6 +107,18 @@ class PostRepository:
         )
         return db_post.to_object() if db_post else None
 
+    def batch_get(self, ids: list[UUID]) -> list[Post]:
+        if not ids:
+            return []
+
+        rows = (
+            self._with_eager(self.db.query(PostModel))
+            .filter(PostModel.id.in_(ids))
+            .all()
+        )
+        by_id = {r.id: r.to_object() for r in rows}
+        return [by_id[i] for i in ids if i in by_id]
+
     def get_posts_by_user(
         self,
         user_id: UUID,
