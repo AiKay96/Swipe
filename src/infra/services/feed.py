@@ -100,6 +100,9 @@ class FeedService:
         ids = [p.id for p in posts]
         self._cache.set(ids_key, ids, self._ttl_creator_ids_by_cat)
 
+        for p in posts:
+            self._cache.set(self._key_post_obj(p.id), p, self._ttl_post_obj)
+
         return self._decorate_posts(user_id=user_id, posts=posts, is_creator=True)
 
     def get_creator_feed(
@@ -147,6 +150,9 @@ class FeedService:
             if pid not in seen:
                 seen.add(pid)
                 deduped_ids.append(pid)
+
+        for fp in all_posts:
+            self._cache.set(self._key_post_obj(fp.post.id), fp.post, self._ttl_post_obj)
 
         self._cache.set(agg_key, deduped_ids, self._ttl_creator_ids_agg)
 
