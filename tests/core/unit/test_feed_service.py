@@ -314,3 +314,23 @@ def test_get_creator_feed_negative_preferences_falls_back() -> None:
         user_id=user_id, before=now, limit=10, top_k_categories=5
     )
     assert out == []
+
+def test_cached_follow_ids_is_reused() -> None:
+    svc = FeedService(
+        personal_post_repo=Mock(),
+        friend_repo=Mock(),
+        personal_post_like_repo=Mock(),
+        preference_repo=Mock(),
+        post_interaction_repo=Mock(),
+        follow_repo=Mock(),
+        post_repo=Mock(),
+        save_repo=Mock(),
+        creator_post_like_repo=Mock(),
+    )
+    u = uuid4()
+    svc.follow_repo.get_following.return_value = [uuid4()]
+
+    a = svc._cached_follow_ids(u)
+    b = svc._cached_follow_ids(u)
+    assert a == b
+    svc.follow_repo.get_following.assert_called_once()
