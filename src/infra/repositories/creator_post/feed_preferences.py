@@ -51,3 +51,11 @@ class FeedPreferenceRepository:
         )
 
         return [(cid, int(points)) for (cid, points) in rows]
+
+    def get_points_map(self, user_id: UUID) -> dict[UUID, int]:
+        rows = (
+            self.db.query(FeedPreference.category_id, FeedPreference.points)
+            .filter_by(user_id=user_id)
+            .all()
+        )
+        return {cid: int(points) for (cid, points) in rows}

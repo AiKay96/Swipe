@@ -1,9 +1,13 @@
+import math
 from dataclasses import dataclass
 from uuid import UUID
 
 from src.core.errors import DoesNotExistError, ExistsError, ForbiddenError
 from src.core.social import FriendStatus
 from src.core.users import User, UserRepository
+from src.infra.repositories.creator_post.feed_preferences import (
+    FeedPreferenceRepository,
+)
 from src.infra.repositories.social import FollowRepository, FriendRepository
 
 
@@ -12,6 +16,7 @@ class SocialService:
     follow_repo: FollowRepository
     friend_repo: FriendRepository
     user_repo: UserRepository
+    feed_pref_repo: FeedPreferenceRepository
 
     def follow(self, user_id: UUID, target_id: UUID) -> None:
         if user_id == target_id:
@@ -104,6 +109,39 @@ class SocialService:
         if not self.user_repo.read_by(user_id=other_id):
             raise DoesNotExistError("User not exist anymore.")
         return self.follow_repo.get(user_id, other_id) is not None
+
+    def _cosine_0_1(self, a: dict[UUID, int], b: dict[UUID, int]) -> float:
+        if not a and not b:
+            return 0.0
+
+        keys = set(a.keys()) | set(b.keys())
+        dot = sum(a.get(k, 0) * b.get(k, 0) for k in keys)
+        na = math.sqrt(sum(v * v for v in a.values()))
+        nb = math.sqrt(sum(v * v for v in b.values()))
+
+        if na == 0.0 or nb == 0.0:
+            return 0.0
+
+        cos = dot / (na * nb)
+        return max(0.0, min(1.0, 0.5 * (cos + 1.0)))
+
+    def calculate_match_rate(self, user_id: UUID, other_id: UUID) -> int:
+        if user_id == other_id:
+            return 100
+
+        interest_sim = self._cosine_0_1(
+            self.feed_pref_repo.get_points_map(user_id),
+            self.feed_pref_repo.get_points_map(other_id),
+        )
+
+        my_friends = set(self.friend_repo.get_friend_ids(user_id))
+        their_friends = set(self.friend_repo.get_friend_ids(other_id))
+        mutuals = len(my_friends & their_friends)
+
+        mutual_bonus = min(0.05 * mutuals, 0.25)
+
+        raw_score = min(1.0, interest_sim + mutual_bonus)
+        return int(round(raw_score * 100))
 
     def get_friend_suggestions(self, user_id: UUID, limit: int = 20) -> list[User]:
         my_friends = set(self.friend_repo.get_friend_ids(user_id))

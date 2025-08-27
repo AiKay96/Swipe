@@ -331,7 +331,7 @@ def test_cached_follow_ids_is_reused() -> None:
     u = uuid4()
 
     mock_get_following = Mock(return_value=[uuid4()])
-    svc.follow_repo.get_following = mock_get_following
+    svc.follow_repo.get_following = mock_get_following  # type: ignore[method-assign]
 
     a = svc._cached_follow_ids(u)
     b = svc._cached_follow_ids(u)
