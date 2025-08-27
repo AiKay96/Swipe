@@ -104,3 +104,27 @@ class SocialService:
         if not self.user_repo.read_by(user_id=other_id):
             raise DoesNotExistError("User not exist anymore.")
         return self.follow_repo.get(user_id, other_id) is not None
+
+    def get_friend_suggestions(self, user_id: UUID, limit: int = 20) -> list[User]:
+        my_friends = set(self.friend_repo.get_friend_ids(user_id))
+
+        fof: set[UUID] = set()
+        for f in my_friends:
+            fof.update(self.friend_repo.get_friend_ids(f))
+
+        fof.discard(user_id)
+        fof -= my_friends
+        fof -= set(self.friend_repo.get_requests_to(user_id))
+        fof -= set(self.friend_repo.get_requests_from(user_id))
+
+        scored: list[tuple[int, UUID]] = []
+        for cid in fof:
+            their_friends = set(self.friend_repo.get_friend_ids(cid))
+            mutuals = len(my_friends & their_friends)
+            scored.append((mutuals, cid))
+
+        scored.sort(key=lambda t: t[0], reverse=True)
+        chosen_ids = [cid for _, cid in scored[:limit]]
+
+        users_by_id = {u.id: u for u in self.user_repo.read_many_by_ids(chosen_ids)}
+        return [users_by_id[cid] for cid in chosen_ids if cid in users_by_id]

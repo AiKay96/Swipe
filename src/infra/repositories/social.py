@@ -91,6 +91,14 @@ class FriendRepository:
             for req in self.db.query(FriendRequest).filter_by(to_user_id=user_id).all()
         ]
 
+    def get_requests_from(self, user_id: UUID) -> list[UUID]:
+        return [
+            req.from_user_id
+            for req in self.db.query(FriendRequest)
+            .filter_by(from_user_id=user_id)
+            .all()
+        ]
+
     def get_friend_ids(self, user_id: UUID) -> list[UUID]:
         return [
             friend.friend_id
