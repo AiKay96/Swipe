@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -27,3 +28,7 @@ class CategoryRepository:
                 self.db.add(db_tag)
 
         self.db.commit()
+
+    def get_all_names(self) -> dict[UUID, str]:
+        rows = self.db.query(CategoryModel.id, CategoryModel.name).all()
+        return {cid: name for cid, name in rows}  # noqa: C416

@@ -3,8 +3,9 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from src.core.errors import DoesNotExistError, ExistsError, ForbiddenError
-from src.core.social import FriendStatus
+from src.core.social import FriendStatus, SocialUser
 from src.core.users import User, UserRepository
+from src.infra.repositories.creator_post.categories import CategoryRepository
 from src.infra.repositories.creator_post.feed_preferences import (
     FeedPreferenceRepository,
 )
@@ -17,6 +18,7 @@ class SocialService:
     friend_repo: FriendRepository
     user_repo: UserRepository
     feed_pref_repo: FeedPreferenceRepository
+    category_repo: CategoryRepository
 
     def follow(self, user_id: UUID, target_id: UUID) -> None:
         if user_id == target_id:
@@ -143,7 +145,33 @@ class SocialService:
         raw_score = min(1.0, interest_sim + mutual_bonus)
         return int(round(raw_score * 100))
 
-    def get_friend_suggestions(self, user_id: UUID, limit: int = 20) -> list[User]:
+    def overlap_categories(self, user_id: UUID, other_id: UUID) -> list[str]:
+        category_names = self.category_repo.get_all_names()
+
+        a_full = self.feed_pref_repo.get_points_map(user_id)
+        b_full = self.feed_pref_repo.get_points_map(other_id)
+        a = {cid: v for cid, v in a_full.items() if v > 0}
+        b = {cid: v for cid, v in b_full.items() if v > 0}
+
+        common = set(a.keys()) & set(b.keys())
+        if not common:
+            return []
+
+        scored: list[tuple[UUID, int, int]] = []
+        for cid in common:
+            av, bv = a[cid], b[cid]
+            strength = min(av, bv)
+            balance = -abs(av - bv)
+            scored.append((cid, strength, balance))
+
+        scored.sort(key=lambda t: (t[1], t[2]), reverse=True)
+        top_ids = [cid for cid, _, _ in scored[:3]]
+
+        return [category_names.get(cid, str(cid)[:8]) for cid in top_ids]
+
+    def get_friend_suggestions(
+        self, user_id: UUID, limit: int = 20
+    ) -> list[SocialUser]:
         my_friends = set(self.friend_repo.get_friend_ids(user_id))
 
         fof: set[UUID] = set()
@@ -155,14 +183,28 @@ class SocialService:
         fof -= set(self.friend_repo.get_requests_to(user_id))
         fof -= set(self.friend_repo.get_requests_from(user_id))
 
-        scored: list[tuple[int, UUID]] = []
-        for cid in fof:
-            their_friends = set(self.friend_repo.get_friend_ids(cid))
-            mutuals = len(my_friends & their_friends)
-            scored.append((mutuals, cid))
+        if not fof:
+            return []
 
-        scored.sort(key=lambda t: t[0], reverse=True)
-        chosen_ids = [cid for _, cid in scored[:limit]]
+        results: list[SocialUser] = []
 
-        users_by_id = {u.id: u for u in self.user_repo.read_many_by_ids(chosen_ids)}
-        return [users_by_id[cid] for cid in chosen_ids if cid in users_by_id]
+        for suggestion_id in fof:
+            suggestion = self.user_repo.read_by(user_id=suggestion_id)
+            if not suggestion:
+                continue
+            social_user = SocialUser(
+                user=suggestion,
+                friend_status=self.get_friend_status(user_id, suggestion_id),
+                is_following=self.is_following(user_id, suggestion_id),
+                mutual_friend_count=len(
+                    my_friends & set(self.friend_repo.get_friend_ids(suggestion_id))
+                ),
+                match_rate=self.calculate_match_rate(user_id, suggestion_id),
+                overlap_categories=self.overlap_categories(user_id, suggestion_id),
+            )
+            results.append(social_user)
+
+        results.sort(
+            key=lambda user: (user.match_rate, user.mutual_friend_count), reverse=True
+        )
+        return results[:limit]

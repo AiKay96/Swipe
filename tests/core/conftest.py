@@ -124,6 +124,7 @@ def client(db_session: Session) -> TestClient:
         friend_repo=friend_repo,
         user_repo=user_repo,
         feed_pref_repo=feed_pref_repo,
+        category_repo=category_repo,
     )
     app.state.feed = FeedService(
         personal_post_repo=personal_post_repo,

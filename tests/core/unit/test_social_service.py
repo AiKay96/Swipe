@@ -22,14 +22,14 @@ def test_should_follow_user() -> None:
     )
     follow_repo.get.return_value = None
 
-    service = SocialService(follow_repo, friend_repo, user_repo, Mock())
+    service = SocialService(follow_repo, friend_repo, user_repo, Mock(), Mock())
     service.follow(user.id, target.id)
 
     follow_repo.follow.assert_called_once_with(user.id, target.id)
 
 
 def test_should_fail_follow_self() -> None:
-    service = SocialService(Mock(), Mock(), Mock(), Mock())
+    service = SocialService(Mock(), Mock(), Mock(), Mock(), Mock())
     user = FakeUser().as_user()
 
     with pytest.raises(ForbiddenError):
@@ -41,7 +41,7 @@ def test_should_fail_follow_if_user_not_found() -> None:
     user_repo = Mock()
     user_repo.read_by.return_value = None
 
-    service = SocialService(follow_repo, Mock(), user_repo, Mock())
+    service = SocialService(follow_repo, Mock(), user_repo, Mock(), Mock())
 
     with pytest.raises(DoesNotExistError):
         service.follow(uuid4(), uuid4())
@@ -58,7 +58,7 @@ def test_should_fail_follow_if_already_following() -> None:
     user_repo.read_by.return_value = target
     follow_repo.get.return_value = True
 
-    service = SocialService(follow_repo, friend_repo, user_repo, Mock())
+    service = SocialService(follow_repo, friend_repo, user_repo, Mock(), Mock())
 
     with pytest.raises(ExistsError):
         service.follow(user.id, target.id)
@@ -76,14 +76,14 @@ def test_should_send_friend_request() -> None:
     friend_repo.get_friend.return_value = None
     friend_repo.get_request.return_value = None
 
-    service = SocialService(follow_repo, friend_repo, user_repo, Mock())
+    service = SocialService(follow_repo, friend_repo, user_repo, Mock(), Mock())
     service.send_friend_request(sender.id, receiver.id)
 
     friend_repo.send_request.assert_called_once_with(sender.id, receiver.id)
 
 
 def test_should_fail_send_friend_request_to_self() -> None:
-    service = SocialService(Mock(), Mock(), Mock(), Mock())
+    service = SocialService(Mock(), Mock(), Mock(), Mock(), Mock())
     user = FakeUser().as_user()
 
     with pytest.raises(ForbiddenError):
@@ -95,7 +95,7 @@ def test_should_fail_send_friend_request_if_user_not_found() -> None:
     user_repo = Mock()
     user_repo.read_by.return_value = None
 
-    service = SocialService(Mock(), Mock(), user_repo, Mock())
+    service = SocialService(Mock(), Mock(), user_repo, Mock(), Mock())
 
     with pytest.raises(DoesNotExistError):
         service.send_friend_request(user.id, uuid4())
@@ -110,7 +110,7 @@ def test_should_fail_send_friend_request_if_already_friends() -> None:
     user_repo = Mock()
     user_repo.read_by.return_value = receiver
 
-    service = SocialService(Mock(), friend_repo, user_repo, Mock())
+    service = SocialService(Mock(), friend_repo, user_repo, Mock(), Mock())
 
     with pytest.raises(ExistsError):
         service.send_friend_request(sender.id, receiver.id)
@@ -126,7 +126,7 @@ def test_should_fail_send_friend_request_if_already_requested() -> None:
     user_repo = Mock()
     user_repo.read_by.return_value = receiver
 
-    service = SocialService(Mock(), friend_repo, user_repo, Mock())
+    service = SocialService(Mock(), friend_repo, user_repo, Mock(), Mock())
 
     with pytest.raises(ExistsError):
         service.send_friend_request(sender.id, receiver.id)
@@ -142,7 +142,7 @@ def test_should_accept_friend_request() -> None:
     user_repo = Mock()
     user_repo.read_by.return_value = sender
 
-    service = SocialService(Mock(), friend_repo, user_repo, Mock())
+    service = SocialService(Mock(), friend_repo, user_repo, Mock(), Mock())
     service.accept_friend_request(sender.id, receiver.id)
 
     friend_repo.accept_request.assert_called_once_with(sender.id, receiver.id)
@@ -150,7 +150,7 @@ def test_should_accept_friend_request() -> None:
 
 def test_should_fail_accept_own_friend_request() -> None:
     user = FakeUser().as_user()
-    service = SocialService(Mock(), Mock(), Mock(), Mock())
+    service = SocialService(Mock(), Mock(), Mock(), Mock(), Mock())
 
     with pytest.raises(ForbiddenError):
         service.accept_friend_request(user.id, user.id)
@@ -160,7 +160,7 @@ def test_should_fail_accept_if_user_missing() -> None:
     user_repo = Mock()
     user_repo.read_by.return_value = None
 
-    service = SocialService(Mock(), Mock(), user_repo, Mock())
+    service = SocialService(Mock(), Mock(), user_repo, Mock(), Mock())
 
     with pytest.raises(DoesNotExistError):
         service.accept_friend_request(uuid4(), uuid4())
@@ -175,7 +175,7 @@ def test_should_fail_accept_if_already_friends() -> None:
     user_repo = Mock()
     user_repo.read_by.return_value = sender
 
-    service = SocialService(Mock(), friend_repo, user_repo, Mock())
+    service = SocialService(Mock(), friend_repo, user_repo, Mock(), Mock())
 
     with pytest.raises(ExistsError):
         service.accept_friend_request(sender.id, receiver.id)
@@ -191,7 +191,7 @@ def test_should_fail_accept_if_request_missing() -> None:
     user_repo = Mock()
     user_repo.read_by.return_value = sender
 
-    service = SocialService(Mock(), friend_repo, user_repo, Mock())
+    service = SocialService(Mock(), friend_repo, user_repo, Mock(), Mock())
 
     with pytest.raises(DoesNotExistError):
         service.accept_friend_request(sender.id, receiver.id)
@@ -206,7 +206,7 @@ def test_should_get_friend_status_all_cases() -> None:
     user_repo = Mock()
     user_repo.read_by.return_value = other
 
-    service = SocialService(follow_repo, friend_repo, user_repo, Mock())
+    service = SocialService(follow_repo, friend_repo, user_repo, Mock(), Mock())
 
     friend_repo.get_friend.return_value = True
     assert service.get_friend_status(user.id, other.id) == FriendStatus.FRIENDS
@@ -231,7 +231,7 @@ def test_should_fail_friend_status_if_user_missing() -> None:
     user_repo = Mock()
     user_repo.read_by.return_value = None
 
-    service = SocialService(Mock(), Mock(), user_repo, Mock())
+    service = SocialService(Mock(), Mock(), user_repo, Mock(), Mock())
     with pytest.raises(DoesNotExistError):
         service.get_friend_status(user.id, uuid4())
 
@@ -245,7 +245,7 @@ def test_should_get_follow_status() -> None:
     user_repo = Mock()
     user_repo.read_by.return_value = other
 
-    service = SocialService(follow_repo, Mock(), user_repo, Mock())
+    service = SocialService(follow_repo, Mock(), user_repo, Mock(), Mock())
     assert service.is_following(user.id, other.id) is True
 
     follow_repo.get.return_value = None
@@ -257,6 +257,6 @@ def test_should_fail_follow_status_if_user_missing() -> None:
     user_repo = Mock()
     user_repo.read_by.return_value = None
 
-    service = SocialService(Mock(), Mock(), user_repo, Mock())
+    service = SocialService(Mock(), Mock(), user_repo, Mock(), Mock())
     with pytest.raises(DoesNotExistError):
         service.is_following(user.id, uuid4())
