@@ -260,3 +260,48 @@ def test_should_fail_follow_status_if_user_missing() -> None:
     service = SocialService(Mock(), Mock(), user_repo, Mock(), Mock())
     with pytest.raises(DoesNotExistError):
         service.is_following(user.id, uuid4())
+
+
+def test_calculate_match_rate_combines_similarity_and_mutuals() -> None:
+    u1 = uuid4()
+    u2 = uuid4()
+
+    follow_repo = Mock()
+    friend_repo = Mock()
+    user_repo = Mock()
+    feed_pref_repo = Mock()
+    category_repo = Mock()
+
+    a = uuid4()
+    b = uuid4()
+
+    def points_map(uid):
+        if uid == u1:
+            return {a: 1}
+        if uid == u2:
+            return {b: 1}
+        return {}
+
+    feed_pref_repo.get_points_map.side_effect = points_map
+
+    m1, m2 = uuid4(), uuid4()
+
+    def friend_ids(uid):
+        if uid == u1:
+            return [m1, m2]
+        if uid == u2:
+            return [m1, m2, uuid4()]
+        return []
+
+    friend_repo.get_friend_ids.side_effect = friend_ids
+
+    svc = SocialService(
+        follow_repo=follow_repo,
+        friend_repo=friend_repo,
+        user_repo=user_repo,
+        feed_pref_repo=feed_pref_repo,
+        category_repo=category_repo,
+    )
+
+    rate = svc.calculate_match_rate(u1, u2)
+    assert rate == 60
