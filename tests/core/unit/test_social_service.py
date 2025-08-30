@@ -1,5 +1,5 @@
 from unittest.mock import Mock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -275,7 +275,7 @@ def test_calculate_match_rate_combines_similarity_and_mutuals() -> None:
     a = uuid4()
     b = uuid4()
 
-    def points_map(uid):
+    def points_map(uid: UUID) -> dict[UUID, int]:
         if uid == u1:
             return {a: 1}
         if uid == u2:
@@ -286,7 +286,7 @@ def test_calculate_match_rate_combines_similarity_and_mutuals() -> None:
 
     m1, m2 = uuid4(), uuid4()
 
-    def friend_ids(uid):
+    def friend_ids(uid: UUID) -> list[UUID]:
         if uid == u1:
             return [m1, m2]
         if uid == u2:
