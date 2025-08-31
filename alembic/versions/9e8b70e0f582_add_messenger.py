@@ -1,8 +1,8 @@
-"""fix tables
+"""add messenger
 
-Revision ID: 8d9619e1b94c
-Revises: 1d6f94e8cdf8
-Create Date: 2025-08-31 13:00:39.009393
+Revision ID: 9e8b70e0f582
+Revises: 8d9619e1b94c
+Create Date: 2025-08-31 19:20:29.398720
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '8d9619e1b94c'
-down_revision: Union[str, Sequence[str], None] = '1d6f94e8cdf8'
+revision: str = '9e8b70e0f582'
+down_revision: Union[str, Sequence[str], None] = '8d9619e1b94c'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -44,14 +44,17 @@ def downgrade() -> None:
     sa.PrimaryKeyConstraint('user_id', 'category_id', name=op.f('feed_preferences_pkey'))
     )
     op.create_index(op.f('ix_feed_preferences_user_cat_tag'), 'feed_preferences', ['user_id', 'category_id'], unique=False)
-    op.create_table('follows',
+    op.create_table('messages',
     sa.Column('id', sa.UUID(), autoincrement=False, nullable=False),
-    sa.Column('follower_id', sa.UUID(), autoincrement=False, nullable=False),
-    sa.Column('following_id', sa.UUID(), autoincrement=False, nullable=False),
-    sa.ForeignKeyConstraint(['follower_id'], ['users.id'], name=op.f('follows_follower_id_fkey'), ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['following_id'], ['users.id'], name=op.f('follows_following_id_fkey'), ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id', name=op.f('follows_pkey')),
-    sa.UniqueConstraint('follower_id', 'following_id', name=op.f('follows_follower_id_following_id_key'), postgresql_include=[], postgresql_nulls_not_distinct=False)
+    sa.Column('chat_id', sa.UUID(), autoincrement=False, nullable=False),
+    sa.Column('sender_id', sa.UUID(), autoincrement=False, nullable=False),
+    sa.Column('((|F|Fr|br|RF|Rb|RB|rF|FR|rB|b|Br|fR|rf|Rf|BR|R|f|r|bR|rb|u|U|f', sa.VARCHAR(), autoincrement=False, nullable=False),
+    sa.Column('created_at', postgresql.TIMESTAMP(), autoincrement=False, nullable=False),
+    sa.Column('seen_at_user_a', postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
+    sa.Column('seen_at_user_b', postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
+    sa.ForeignKeyConstraint(['chat_id'], ['chats.id'], name=op.f('messages_chat_id_fkey'), ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['sender_id'], ['users.id'], name=op.f('messages_sender_id_fkey'), ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id', name=op.f('messages_pkey'))
     )
     op.create_table('friend_requests',
     sa.Column('id', sa.UUID(), autoincrement=False, nullable=False),
@@ -61,6 +64,17 @@ def downgrade() -> None:
     sa.ForeignKeyConstraint(['to_user_id'], ['users.id'], name=op.f('friend_requests_to_user_id_fkey'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('friend_requests_pkey')),
     sa.UniqueConstraint('from_user_id', 'to_user_id', name=op.f('friend_requests_from_user_id_to_user_id_key'), postgresql_include=[], postgresql_nulls_not_distinct=False)
+    )
+    op.create_table('chats',
+    sa.Column('id', sa.UUID(), autoincrement=False, nullable=False),
+    sa.Column('user_a_id', sa.UUID(), autoincrement=False, nullable=False),
+    sa.Column('user_b_id', sa.UUID(), autoincrement=False, nullable=False),
+    sa.Column('last_message_at', postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
+    sa.Column('last_message_id', sa.UUID(), autoincrement=False, nullable=True),
+    sa.ForeignKeyConstraint(['user_a_id'], ['users.id'], name=op.f('chats_user_a_id_fkey'), ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_b_id'], ['users.id'], name=op.f('chats_user_b_id_fkey'), ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id', name=op.f('chats_pkey')),
+    sa.UniqueConstraint('user_a_id', 'user_b_id', name=op.f('uq_chat_pair'), postgresql_include=[], postgresql_nulls_not_distinct=False)
     )
     op.create_table('creator_post_interactions',
     sa.Column('user_id', sa.UUID(), autoincrement=False, nullable=False),
@@ -78,5 +92,14 @@ def downgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('friends_user_id_fkey'), ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id', name=op.f('friends_pkey')),
     sa.UniqueConstraint('user_id', 'friend_id', name=op.f('friends_user_id_friend_id_key'), postgresql_include=[], postgresql_nulls_not_distinct=False)
+    )
+    op.create_table('follows',
+    sa.Column('id', sa.UUID(), autoincrement=False, nullable=False),
+    sa.Column('follower_id', sa.UUID(), autoincrement=False, nullable=False),
+    sa.Column('following_id', sa.UUID(), autoincrement=False, nullable=False),
+    sa.ForeignKeyConstraint(['follower_id'], ['users.id'], name=op.f('follows_follower_id_fkey'), ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['following_id'], ['users.id'], name=op.f('follows_following_id_fkey'), ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id', name=op.f('follows_pkey')),
+    sa.UniqueConstraint('follower_id', 'following_id', name=op.f('follows_follower_id_following_id_key'), postgresql_include=[], postgresql_nulls_not_distinct=False)
     )
     # ### end Alembic commands ###

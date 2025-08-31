@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from src.core.creator_post.posts import CreatorPostService
 from src.core.creator_post.references import ReferenceService
 from src.core.feed import FeedService
+from src.core.messenger import MessengerService
 from src.core.personal_post.posts import PersonalPostService
 from src.core.search import SearchService
 from src.core.social import SocialService
@@ -72,6 +73,13 @@ def get_search_service(request: Request) -> SearchService:
 
 
 SearchServiceDependable = Annotated[SearchService, Depends(get_search_service)]
+
+
+def get_messenger_service(request: Request) -> MessengerService:
+    return request.app.state.messenger  # type: ignore
+
+
+MessengerServiceDependable = Annotated[MessengerService, Depends(get_messenger_service)]
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth")
 

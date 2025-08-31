@@ -10,6 +10,7 @@ from src.infra.fastapi.auth import auth_api
 from src.infra.fastapi.creator_posts import creator_post_api
 from src.infra.fastapi.feed import feed_api
 from src.infra.fastapi.media import media_api
+from src.infra.fastapi.messenger import messenger_api
 from src.infra.fastapi.personal_posts import personal_post_api
 from src.infra.fastapi.references import reference_api
 from src.infra.fastapi.social import social_api
@@ -37,6 +38,7 @@ from src.infra.repositories.creator_post.posts import (
 )
 from src.infra.repositories.creator_post.references import ReferenceRepository
 from src.infra.repositories.creator_post.saves import SaveRepository
+from src.infra.repositories.messenger import ChatRepository, MessageRepository
 from src.infra.repositories.personal_post.comments import (
     CommentRepository as PersonalPostCommentRepository,
 )
@@ -51,6 +53,7 @@ from src.infra.repositories.tokens import TokenRepository
 from src.infra.repositories.users import UserRepository
 from src.infra.services.creator_post import CreatorPostService
 from src.infra.services.feed import FeedService
+from src.infra.services.messenger import MessengerService
 from src.infra.services.personal_post import PersonalPostService
 from src.infra.services.reference import ReferenceService
 from src.infra.services.social import SocialService
@@ -103,6 +106,8 @@ def init_app() -> FastAPI:
     save_repo = SaveRepository(db)
     feed_pref_repo = FeedPreferenceRepository(db)
     post_init_repo = PostInteractionRepository(db)
+    chat_repo = ChatRepository(db)
+    message_repo = MessageRepository(db)
 
     app.state.users = user_repo
     app.state.tokens = token_repo
@@ -142,6 +147,10 @@ def init_app() -> FastAPI:
         save_repo=save_repo,
         feed_pref_repo=feed_pref_repo,
     )
+    app.state.messenger = MessengerService(
+        chat_repo=chat_repo,
+        message_repo=message_repo,
+    )
 
     app.include_router(user_api)
     app.include_router(auth_api)
@@ -151,5 +160,6 @@ def init_app() -> FastAPI:
     app.include_router(feed_api)
     app.include_router(reference_api)
     app.include_router(media_api)
+    app.include_router(messenger_api)
 
     return app
