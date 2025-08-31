@@ -40,6 +40,14 @@ class FeedService(Protocol):
         limit: int = 20,
     ) -> list[FeedPost]: ...
 
+    def decorate_posts(
+        self,
+        user_id: UUID,
+        posts: list[PersonalPost] | list[CreatorPost],
+        *,
+        is_creator: bool,
+    ) -> list[FeedPost]: ...
+
 
 class FeedPreferenceRepository(Protocol):
     def init_user_preferences(self, user_id: UUID) -> None: ...

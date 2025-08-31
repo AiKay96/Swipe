@@ -3,7 +3,7 @@ from typing import Any
 from uuid import UUID
 
 import bcrypt
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from src.core.errors import DoesNotExistError, ExistsError
@@ -78,3 +78,25 @@ class UserRepository:
 
         self.db.commit()
         self.db.refresh(user)
+
+    def search(self, query: str, limit: int = 10) -> list[User]:
+        stmt = (
+            select(UserORM)
+            .where(
+                or_(
+                    UserORM.username.ilike(f"%{query}%"),
+                    UserORM.display_name.ilike(f"%{query}%"),
+                    func.similarity(UserORM.username, query) > 0.3,
+                    func.similarity(UserORM.display_name, query) > 0.3,
+                )
+            )
+            .order_by(
+                func.greatest(
+                    func.similarity(UserORM.username, query),
+                    func.similarity(UserORM.display_name, query),
+                ).desc()
+            )
+            .limit(limit)
+        )
+        rows = self.db.execute(stmt).scalars().all()
+        return [u.to_object() for u in rows]

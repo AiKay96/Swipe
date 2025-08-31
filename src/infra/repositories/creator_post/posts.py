@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from uuid import UUID
 
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Query, Session, selectinload
 
 from src.core.creator_post.posts import Post
@@ -250,6 +251,48 @@ class PostRepository:
                 (PostModel.like_count + PostModel.dislike_count).desc(),
                 PostModel.created_at.desc(),
             )
+            .limit(limit)
+            .all()
+        )
+        return [p.to_object() for p in posts]
+
+    def search(
+        self,
+        query: str,
+        *,
+        limit: int = 50,
+        before: datetime | None = None,
+    ) -> list[Post]:
+        ts_query = func.plainto_tsquery("english", query)
+
+        ts_vector = (
+            func.to_tsvector("english", PostModel.description)
+            + func.to_tsvector(
+                "english", func.array_to_string(PostModel.category_tag_names, " ")
+            )
+            + func.to_tsvector(
+                "english", func.array_to_string(PostModel.hashtag_names, " ")
+            )
+            + func.to_tsvector("english", func.coalesce(ReferenceModel.title, ""))
+        )
+
+        q = (
+            self._with_eager(self.db.query(PostModel))
+            .outerjoin(ReferenceModel, PostModel.reference_id == ReferenceModel.id)
+            .filter(
+                or_(
+                    ts_vector.op("@@")(ts_query),
+                    PostModel.description.ilike(f"%{query}%"),
+                    func.similarity(PostModel.description, query) > 0.3,
+                )
+            )
+        )
+
+        if before is not None:
+            q = q.filter(PostModel.created_at < before)
+
+        posts = (
+            q.order_by(func.similarity(PostModel.description, query).desc())
             .limit(limit)
             .all()
         )

@@ -7,6 +7,7 @@ from src.core.creator_post.posts import CreatorPostService
 from src.core.creator_post.references import ReferenceService
 from src.core.feed import FeedService
 from src.core.personal_post.posts import PersonalPostService
+from src.core.search import SearchService
 from src.core.social import SocialService
 from src.core.tokens import TokenRepository
 from src.core.users import User, UserRepository
@@ -64,6 +65,13 @@ def get_reference_service(request: Request) -> ReferenceService:
 
 
 ReferenceServiceDependable = Annotated[ReferenceService, Depends(get_reference_service)]
+
+
+def get_search_service(request: Request) -> SearchService:
+    return request.app.state.searchs  # type: ignore
+
+
+SearchServiceDependable = Annotated[SearchService, Depends(get_search_service)]
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth")
 

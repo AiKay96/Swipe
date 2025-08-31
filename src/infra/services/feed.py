@@ -56,7 +56,7 @@ class FeedService:
     ) -> list[FeedPost]:
         friend_ids = self.friend_repo.get_friend_ids(user_id)
         posts = self.personal_post_repo.get_posts_by_users(friend_ids, before, limit)
-        return self._decorate_posts(user_id=user_id, posts=posts, is_creator=False)
+        return self.decorate_posts(user_id=user_id, posts=posts, is_creator=False)
 
     def get_creator_feed_by_category(
         self,
@@ -69,7 +69,7 @@ class FeedService:
         cached_ids = self._cache.get(ids_key)
         if cached_ids is not None:
             posts = self._batch_get_creator_posts_with_cache(cached_ids)
-            return self._decorate_posts(user_id=user_id, posts=posts, is_creator=True)
+            return self.decorate_posts(user_id=user_id, posts=posts, is_creator=True)
 
         interacted_posts = self.post_interaction_repo.get_recent_interacted_posts(
             user_id
@@ -103,7 +103,7 @@ class FeedService:
         for p in posts:
             self._cache.set(self._key_post_obj(p.id), p, self._ttl_post_obj)
 
-        return self._decorate_posts(user_id=user_id, posts=posts, is_creator=True)
+        return self.decorate_posts(user_id=user_id, posts=posts, is_creator=True)
 
     def get_creator_feed(
         self,
@@ -119,7 +119,7 @@ class FeedService:
         if cached_ids is not None:
             posts = self._batch_get_creator_posts_with_cache(cached_ids)
             random.shuffle(posts)
-            return self._decorate_posts(
+            return self.decorate_posts(
                 user_id=user_id, posts=posts[:limit], is_creator=True
             )
 
@@ -199,7 +199,7 @@ class FeedService:
 
         return [(cid, points / total) for cid, points in cleaned]
 
-    def _decorate_posts(
+    def decorate_posts(
         self,
         user_id: UUID,
         posts: list[PersonalPost] | list[CreatorPost],
