@@ -11,12 +11,12 @@ from src.core.personal_post.posts import PersonalPostService
 from src.core.search import SearchService
 from src.core.social import SocialService
 from src.core.tokens import TokenRepository
-from src.core.users import User, UserRepository
+from src.core.users import User, UserRepository, UserService
 from src.infra.services.auth import AuthService
 
 
 def get_user_repository(request: Request) -> UserRepository:
-    return request.app.state.users  # type: ignore
+    return request.app.state.user  # type: ignore
 
 
 UserRepositoryDependable = Annotated[UserRepository, Depends(get_user_repository)]
@@ -27,6 +27,13 @@ def get_token_repository(request: Request) -> TokenRepository:
 
 
 TokenRepositoryDependable = Annotated[TokenRepository, Depends(get_token_repository)]
+
+
+def get_user_service(request: Request) -> UserService:
+    return request.app.state.users  # type: ignore
+
+
+UserServiceDependable = Annotated[UserService, Depends(get_user_service)]
 
 
 def get_personal_post_service(request: Request) -> PersonalPostService:

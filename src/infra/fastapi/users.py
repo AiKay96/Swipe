@@ -7,15 +7,15 @@ from pydantic import BaseModel, field_validator
 from starlette.responses import JSONResponse
 
 from src.core.errors import DoesNotExistError, ExistsError
-from src.core.social import FriendStatus
+from src.core.social import FriendStatus, SocialUser
 from src.core.users import User
+from src.infra.decorators.user import UserDecorator
 from src.infra.fastapi.dependables import (
     FeedServiceDependable,
     SocialServiceDependable,
-    UserRepositoryDependable,
+    UserServiceDependable,
     get_current_user,
 )
-from src.infra.services.user import UserService
 
 user_api = APIRouter(tags=["Users"])
 
@@ -32,20 +32,22 @@ class UserItem(BaseModel):
     username: str
     display_name: str
     bio: str | None
+    profile_picture: str | None = None
     friend_status: FriendStatus
     is_following: bool
 
     @classmethod
     def from_user(
-        cls, user: User, friend_status: FriendStatus, is_following: bool
+        cls,
+        user: SocialUser,
     ) -> "UserItem":
         return cls(
-            id=user.id,
-            username=user.username,
-            display_name=user.display_name,
-            bio=user.bio,
-            friend_status=friend_status,
-            is_following=is_following,
+            id=user.user.id,
+            username=user.user.username,
+            display_name=user.user.display_name,
+            bio=user.user.bio,
+            friend_status=user.friend_status,
+            is_following=user.is_following,
         )
 
 
@@ -126,12 +128,11 @@ class UserUpdateRequest(BaseModel):
 )
 def register(
     request: CreateUserRequest,
-    users: UserRepositoryDependable,
+    users: UserServiceDependable,
     feed: FeedServiceDependable,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        service = UserService(users)
-        user = service.register(request.mail, request.password)
+        user = users.register(request.mail, request.password)
         feed.init_preferences(user.id)
         return {"user": MeItem.from_user(user)}
 
@@ -149,15 +150,19 @@ def register(
 )
 def get_user(
     username: str,
-    users: UserRepositoryDependable,
+    users: UserServiceDependable,
     social: SocialServiceDependable,
     current_user: User = Depends(get_current_user),  # noqa: B008
 ) -> dict[str, Any] | JSONResponse:
     try:
-        user = UserService(users).get_by_username(username)
-        friend_status = social.get_friend_status(current_user.id, user.id)
-        is_following = social.is_following(current_user.id, user.id)
-        return {"user": UserItem.from_user(user, friend_status, is_following)}
+        user = users.get_by_username(username)
+        return {
+            "user": UserItem.from_user(
+                UserDecorator(social).decorate_entity(
+                    user_id=current_user.id, user=user
+                )
+            )
+        }
     except DoesNotExistError:
         return JSONResponse(
             status_code=404,
@@ -181,12 +186,11 @@ def get_me(user: User = Depends(get_current_user)) -> dict[str, Any]:  # noqa: B
 )
 def update_me(
     request: UserUpdateRequest,
-    users: UserRepositoryDependable,
+    users: UserServiceDependable,
     current_user: User = Depends(get_current_user),  # noqa: B008
 ) -> JSONResponse:
-    service = UserService(users)
     try:
-        service.update_user(
+        users.update_user(
             user_id=current_user.id,
             **request.model_dump(exclude_unset=True, exclude_none=True),
         )

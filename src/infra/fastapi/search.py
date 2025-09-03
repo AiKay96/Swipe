@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from src.core.users import User
+from src.infra.decorators.user import UserDecorator
 from src.infra.fastapi.dependables import (
     SearchServiceDependable,
     SocialServiceDependable,
@@ -54,10 +55,14 @@ def search_users(
     try:
         found = service.search_users(query, limit=limit)
         result = []
-        for u in found:
-            friend_status = social.get_friend_status(current_user.id, u.id)
-            is_following = social.is_following(current_user.id, u.id)
-            result.append(UserItem.from_user(u, friend_status, is_following))
+        for user in found:
+            result.append(
+                UserItem.from_user(
+                    UserDecorator(social).decorate_entity(
+                        user_id=current_user.id, user=user
+                    )
+                )
+            )
         return {"users": result}
     except Exception as e:
         return exception_response(e)

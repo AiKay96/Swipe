@@ -58,6 +58,7 @@ from src.infra.services.messenger import MessengerService
 from src.infra.services.personal_post import PersonalPostService
 from src.infra.services.reference import ReferenceService
 from src.infra.services.social import SocialService
+from src.infra.services.user import UserService
 from src.runner.config import settings
 from src.runner.db import Base
 
@@ -110,7 +111,7 @@ def init_app() -> FastAPI:
     chat_repo = ChatRepository(db)
     message_repo = MessageRepository(db)
 
-    app.state.users = user_repo
+    app.state.user = user_repo
     app.state.tokens = token_repo
 
     post_decorator = PostDecorator(
@@ -118,6 +119,8 @@ def init_app() -> FastAPI:
         save_repo=save_repo,
         creator_post_like_repo=creator_post_like_repo,
     )
+
+    app.state.users = UserService(user_repo)
 
     app.state.personal_posts = PersonalPostService(
         post_repo=personal_post_repo,

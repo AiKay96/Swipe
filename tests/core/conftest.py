@@ -59,6 +59,7 @@ from src.infra.services.messenger import MessengerService
 from src.infra.services.personal_post import PersonalPostService
 from src.infra.services.reference import ReferenceService
 from src.infra.services.social import SocialService
+from src.infra.services.user import UserService
 from src.runner.db import Base
 from src.runner.setup import get_db
 
@@ -117,13 +118,15 @@ def client(db_session: Session) -> TestClient:
     chat_repo = ChatRepository(db_session)
     message_repo = MessageRepository(db_session)
 
-    app.state.users = user_repo
+    app.state.user = user_repo
     app.state.tokens = token_repo
     post_decorator = PostDecorator(
         personal_post_like_repo=personal_post_like_repo,
         save_repo=save_repo,
         creator_post_like_repo=creator_post_like_repo,
     )
+
+    app.state.users = UserService(user_repo)
 
     app.state.personal_posts = PersonalPostService(
         post_repo=personal_post_repo,
