@@ -205,10 +205,12 @@ class FakeCreatorPost:
             "category_tag_names": list(self.category_tag_names),
             "hashtag_names": list(self.hashtag_names),
         }
-        if self.category_id is not None:
-            payload["category_id"] = str(self.category_id)
-        if self.reference_id is not None:
-            payload["reference_id"] = str(self.reference_id)
+        payload["category_id"] = (
+            str(self.category_id) if self.category_id else _faker.uuid4()
+        )
+        payload["reference_id"] = (
+            str(self.reference_id) if self.reference_id else _faker.uuid4()
+        )
         return payload
 
 

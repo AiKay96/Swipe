@@ -130,6 +130,7 @@ def client(db_session: Session) -> TestClient:
         like_repo=personal_post_like_repo,
         comment_repo=personal_post_comment_repo,
         friend_repo=friend_repo,
+        post_decorator=post_decorator,
     )
     app.state.social = SocialService(
         follow_repo=follow_repo,
@@ -157,6 +158,7 @@ def client(db_session: Session) -> TestClient:
         comment_repo=creator_post_comment_repo,
         save_repo=save_repo,
         feed_pref_repo=feed_pref_repo,
+        post_decorator=post_decorator,
     )
     app.state.messenger = MessengerService(
         chat_repo=chat_repo,

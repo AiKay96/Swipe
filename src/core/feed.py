@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
-from src.core.creator_post.posts import Post as CreatorPost
-from src.core.personal_post.posts import Post as PersonalPost
+if TYPE_CHECKING:
+    from src.core.creator_post.posts import Post as CreatorPost
+    from src.core.personal_post.posts import Post as PersonalPost
 
 
 class Reaction(str, Enum):
@@ -16,7 +17,7 @@ class Reaction(str, Enum):
 
 @dataclass
 class FeedPost:
-    post: PersonalPost | CreatorPost
+    post: "PersonalPost | CreatorPost"
     reaction: Reaction = Reaction.NONE
     is_saved: bool | None = None
 
@@ -43,7 +44,7 @@ class FeedService(Protocol):
     def decorate_posts(
         self,
         user_id: UUID,
-        posts: list[PersonalPost] | list[CreatorPost],
+        posts: list["PersonalPost"] | list["CreatorPost"],
         *,
         is_creator: bool,
     ) -> list[FeedPost]: ...

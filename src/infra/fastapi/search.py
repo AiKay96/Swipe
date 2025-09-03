@@ -7,12 +7,11 @@ from pydantic import BaseModel
 
 from src.core.users import User
 from src.infra.fastapi.dependables import (
-    FeedServiceDependable,
     SearchServiceDependable,
     SocialServiceDependable,
     get_current_user,
 )
-from src.infra.fastapi.feed import FeedPostItem
+from src.infra.fastapi.post_models import FeedPostItem
 from src.infra.fastapi.users import UserItem
 from src.infra.fastapi.utils import exception_response
 
@@ -20,7 +19,7 @@ search_api = APIRouter(tags=["Search"])
 
 
 class SearchPostsResponse(BaseModel):
-    posts: list[FeedPostItem]
+    feed_posts: list[FeedPostItem]
 
 
 class SearchUsersResponse(BaseModel):
@@ -30,16 +29,16 @@ class SearchUsersResponse(BaseModel):
 @search_api.get("/search/posts", response_model=SearchPostsResponse)
 def search_posts(
     service: SearchServiceDependable,
-    feed_service: FeedServiceDependable,
     query: str,
     limit: int = Query(20, ge=1, le=50),
     before: datetime | None = None,
     user: User = Depends(get_current_user),  # noqa: B008
 ) -> dict[str, Any] | JSONResponse:
     try:
-        posts = service.search_posts(query, limit=limit, before=before)
-        decorated = feed_service.decorate_posts(user.id, posts, is_creator=True)
-        return {"posts": [FeedPostItem.from_feed_post(p) for p in decorated]}
+        posts = service.search_posts(
+            user_id=user.id, query=query, limit=limit, before=before
+        )
+        return {"feed_posts": [FeedPostItem.from_post(p) for p in posts]}
     except Exception as e:
         return exception_response(e)
 

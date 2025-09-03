@@ -33,9 +33,9 @@ def test_should_get_feed_with_reactions() -> None:
     svc = FakeFeedService()
 
     svc.friend_repo.get_friend_ids.return_value = [friend_id]
-    svc.post_repo.get_posts_by_users.return_value = [post1, post2]
+    svc.personal_post_repo.get_posts_by_users.return_value = [post1, post2]
 
-    svc.post_decorator.decorate_posts.return_value = [
+    svc.post_decorator.decorate_list.return_value = [
         FeedPost(post=post1, reaction=Reaction.LIKE, is_saved=False),
         FeedPost(post=post2, reaction=Reaction.DISLIKE, is_saved=False),
     ]
@@ -58,13 +58,15 @@ def test_should_return_none_reaction_if_missing() -> None:
     svc = FakeFeedService()
 
     svc.friend_repo.get_friend_ids.return_value = [friend_id]
-    svc.post_repo.get_posts_by_users.return_value = [post]
-    svc.post_decorator.decorate_posts.return_value = [
+    svc.personal_post_repo.get_posts_by_users.return_value = [post]
+
+    svc.post_decorator.decorate_list.return_value = [
         FeedPost(post=post, reaction=Reaction.NONE, is_saved=False)
     ]
 
     result = svc.get_personal_feed(user_id, before=datetime.now(), limit=5)
 
+    assert isinstance(result, list)
     assert len(result) == 1
     assert result[0].post.id == post.id
     assert result[0].reaction == Reaction.NONE
@@ -91,16 +93,22 @@ def test_should_get_creator_feed_by_category() -> None:
 
     def _decorate(posts: Sequence[Any], *args: Any, **kwargs: Any) -> list[FeedPost]:  # noqa: ARG001
         out: list[FeedPost] = []
-        for p in posts:
-            if p.id == followed_post.id:
-                out.append(FeedPost(post=p, reaction=Reaction.LIKE, is_saved=False))
-            elif p.id == trending_post.id:
-                out.append(FeedPost(post=p, reaction=Reaction.DISLIKE, is_saved=True))
-            elif p.id == interacted_post.id:
-                out.append(FeedPost(post=p, reaction=Reaction.NONE, is_saved=False))
+        ids = {p.id for p in posts}
+        if followed_post.id in ids:
+            out.append(
+                FeedPost(post=followed_post, reaction=Reaction.LIKE, is_saved=False)
+            )
+        if trending_post.id in ids:
+            out.append(
+                FeedPost(post=trending_post, reaction=Reaction.DISLIKE, is_saved=True)
+            )
+        if interacted_post.id in ids:
+            out.append(
+                FeedPost(post=interacted_post, reaction=Reaction.NONE, is_saved=False)
+            )
         return out
 
-    svc.post_decorator.decorate_posts.side_effect = _decorate
+    svc.post_decorator.decorate_list.side_effect = _decorate
 
     result = svc.get_creator_feed_by_category(
         user_id=user_id,

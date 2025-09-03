@@ -15,7 +15,31 @@ class PostDecorator:
     save_repo: SaveRepository
     creator_post_like_repo: CreatorPostLikeRepository
 
-    def decorate_posts(
+    def decorate_entity(
+        self,
+        user_id: UUID,
+        post: PersonalPost | CreatorPost,
+        *,
+        is_creator: bool,
+    ) -> FeedPost:
+        if is_creator:
+            like = self.creator_post_like_repo.get(user_id, post.id)
+            if not like:
+                reaction = Reaction.NONE
+            else:
+                reaction = Reaction.DISLIKE if like.is_dislike else Reaction.LIKE
+            save = self.save_repo.get(user_id, post.id)
+            is_saved = save is not None
+            return FeedPost(post=post, reaction=reaction, is_saved=is_saved)
+
+        like = self.creator_post_like_repo.get(user_id, post.id)
+        if not like:
+            reaction = Reaction.NONE
+        else:
+            reaction = Reaction.DISLIKE if like.is_dislike else Reaction.LIKE
+        return FeedPost(post=post, reaction=reaction, is_saved=None)
+
+    def decorate_list(
         self,
         user_id: UUID,
         posts: list[PersonalPost] | list[CreatorPost],

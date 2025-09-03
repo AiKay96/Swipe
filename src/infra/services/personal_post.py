@@ -3,9 +3,11 @@ from datetime import datetime
 from uuid import UUID
 
 from src.core.errors import DoesNotExistError
+from src.core.feed import FeedPost
 from src.core.personal_post.comments import Comment, CommentRepository
 from src.core.personal_post.likes import Like, LikeRepository
 from src.core.personal_post.posts import Media, Post, PostRepository, Privacy
+from src.infra.decorators.post import PostDecorator
 from src.infra.repositories.social import FriendRepository
 
 
@@ -15,10 +17,16 @@ class PersonalPostService:
     like_repo: LikeRepository
     comment_repo: CommentRepository
     friend_repo: FriendRepository
+    post_decorator: PostDecorator
 
-    def create_post(self, user_id: UUID, description: str, media: list[Media]) -> Post:
+    def create_post(
+        self, user_id: UUID, description: str, media: list[Media]
+    ) -> FeedPost:
         post = Post(user_id=user_id, description=description, media=media)
-        return self.post_repo.create(post)
+        created = self.post_repo.create(post)
+        return self.post_decorator.decorate_entity(
+            created.user_id, created, is_creator=False
+        )
 
     def delete_post(self, post_id: UUID, user_id: UUID) -> None:
         post = self.post_repo.get(post_id)
@@ -102,13 +110,18 @@ class PersonalPostService:
         from_user_id: UUID,
         limit: int,
         before: datetime,
-    ) -> list[Post]:
+    ) -> list[FeedPost]:
         is_friend = self.friend_repo.get_friend(user_id, from_user_id) is not None
         if user_id == from_user_id:
             is_friend = True
-        return self.post_repo.get_posts_by_user(
+        posts = self.post_repo.get_posts_by_user(
             user_id=user_id,
             limit=limit,
             before=before,
             include_friends_only=is_friend,
+        )
+        return self.post_decorator.decorate_list(
+            user_id=user_id,
+            posts=posts,
+            is_creator=False,
         )

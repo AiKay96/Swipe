@@ -6,44 +6,12 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.core.creator_post.posts import Post as CreatorPost
-from src.core.feed import FeedPost, Reaction
-from src.core.personal_post.posts import Post as PersonalPost
 from src.core.users import User
-from src.infra.fastapi.creator_posts import (
-    PostItem as CreatorPostItem,
-)
 from src.infra.fastapi.dependables import FeedServiceDependable, get_current_user
-from src.infra.fastapi.personal_posts import (
-    PostItem as PersonalPostItem,
-)
+from src.infra.fastapi.post_models import FeedPostItem
 from src.infra.fastapi.utils import exception_response
 
 feed_api = APIRouter(tags=["Feed"])
-
-
-class FeedPostItem(BaseModel):
-    post: PersonalPostItem | CreatorPostItem
-    is_saved: bool | None = None
-    reaction: Reaction
-
-    @classmethod
-    def from_feed_post(cls, feed_post: FeedPost) -> "FeedPostItem":
-        p = feed_post.post
-
-        post_item: PersonalPostItem | CreatorPostItem
-        if isinstance(p, CreatorPost):
-            post_item = CreatorPostItem.from_post(p)
-        elif isinstance(p, PersonalPost):
-            post_item = PersonalPostItem.from_post(p)
-        else:
-            raise TypeError(f"Unsupported post type: {type(p)!r}")
-
-        return cls(
-            post=post_item,
-            is_saved=feed_post.is_saved,
-            reaction=feed_post.reaction,
-        )
 
 
 class FeedResponse(BaseModel):
@@ -62,7 +30,7 @@ def get_personal_feed(
             before = datetime.now()
         return {
             "posts": [
-                FeedPostItem.from_feed_post(u)
+                FeedPostItem.from_post(u)
                 for u in service.get_personal_feed(user.id, before, limit)
             ]
         }
@@ -87,7 +55,7 @@ def get_creator_feed_by_category(
             before=before,
             limit=limit,
         )
-        return {"posts": [FeedPostItem.from_feed_post(p) for p in posts]}
+        return {"posts": [FeedPostItem.from_post(p) for p in posts]}
     except Exception as e:
         return exception_response(e)
 
@@ -107,6 +75,6 @@ def get_creator_feed(
             before=before,
             limit=limit,
         )
-        return {"posts": [FeedPostItem.from_feed_post(p) for p in posts]}
+        return {"posts": [FeedPostItem.from_post(p) for p in posts]}
     except Exception as e:
         return exception_response(e)

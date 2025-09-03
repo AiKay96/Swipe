@@ -4,6 +4,8 @@ from enum import Enum
 from typing import Protocol
 from uuid import UUID, uuid4
 
+from src.core.feed import FeedPost
+
 from .comments import Comment
 
 
@@ -108,7 +110,7 @@ class CreatorPostService(Protocol):
         category_tag_names: list[str],
         hashtag_names: list[str],
         media: list[Media],
-    ) -> Post: ...
+    ) -> FeedPost: ...
 
     def delete_post(self, post_id: UUID, user_id: UUID) -> None: ...
 
@@ -133,11 +135,11 @@ class CreatorPostService(Protocol):
         user_id: UUID,
         limit: int,
         before: datetime,
-    ) -> list[Post]: ...
+    ) -> list[FeedPost]: ...
 
     def get_user_saves(
         self,
         user_id: UUID,
         limit: int,
         before: datetime,
-    ) -> list[Post]: ...
+    ) -> list[FeedPost]: ...

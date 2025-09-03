@@ -7,6 +7,8 @@ from src.core.creator_post.likes import Like, LikeRepository
 from src.core.creator_post.posts import Media, Post, PostRepository
 from src.core.creator_post.saves import Save, SaveRepository
 from src.core.errors import DoesNotExistError
+from src.core.feed import FeedPost
+from src.infra.decorators.post import PostDecorator
 from src.infra.repositories.creator_post.feed_preferences import (
     FeedPreferenceRepository,
 )
@@ -19,6 +21,7 @@ class CreatorPostService:
     comment_repo: CommentRepository
     save_repo: SaveRepository
     feed_pref_repo: FeedPreferenceRepository
+    post_decorator: PostDecorator
 
     def create_post(
         self,
@@ -29,7 +32,7 @@ class CreatorPostService:
         category_tag_names: list[str],
         hashtag_names: list[str],
         media: list[Media],
-    ) -> Post:
+    ) -> FeedPost:
         post = Post(
             user_id=user_id,
             category_id=category_id,
@@ -39,7 +42,10 @@ class CreatorPostService:
             hashtag_names=hashtag_names,
             media=media,
         )
-        return self.post_repo.create(post)
+        created = self.post_repo.create(post)
+        return self.post_decorator.decorate_entity(
+            user_id=user_id, post=created, is_creator=True
+        )
 
     def delete_post(self, post_id: UUID, user_id: UUID) -> None:
         post = self.post_repo.get(post_id)
@@ -143,11 +149,15 @@ class CreatorPostService:
         user_id: UUID,
         limit: int,
         before: datetime,
-    ) -> list[Post]:
-        return self.post_repo.get_posts_by_user(
+    ) -> list[FeedPost]:
+        return self.post_decorator.decorate_list(
             user_id=user_id,
-            limit=limit,
-            before=before,
+            posts=self.post_repo.get_posts_by_user(
+                user_id=user_id,
+                limit=limit,
+                before=before,
+            ),
+            is_creator=True,
         )
 
     def get_user_saves(
@@ -155,11 +165,15 @@ class CreatorPostService:
         user_id: UUID,
         limit: int,
         before: datetime,
-    ) -> list[Post]:
-        return self.post_repo.get_saved_posts_by_user(
+    ) -> list[FeedPost]:
+        return self.post_decorator.decorate_list(
             user_id=user_id,
-            limit=limit,
-            before=before,
+            posts=self.post_repo.get_saved_posts_by_user(
+                user_id=user_id,
+                limit=limit,
+                before=before,
+            ),
+            is_creator=True,
         )
 
     def _record_interaction(self, user_id: UUID, post: Post, action: str) -> None:

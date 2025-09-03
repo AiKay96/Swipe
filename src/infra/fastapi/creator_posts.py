@@ -6,12 +6,13 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, field_validator
 from starlette.responses import JSONResponse
 
-from src.core.creator_post.posts import Media, MediaType, Post
+from src.core.creator_post.posts import Media, MediaType
 from src.core.users import User
 from src.infra.fastapi.dependables import (
     CreatorPostServiceDependable,
     get_current_user,
 )
+from src.infra.fastapi.post_models import FeedPostItem
 from src.infra.fastapi.utils import exception_response
 
 creator_post_api = APIRouter(tags=["CreatorPosts"])
@@ -60,53 +61,12 @@ class CommentRequest(BaseModel):
         return v
 
 
-class MediaItem(BaseModel):
-    url: str
-    media_type: MediaType
-
-    @classmethod
-    def from_media(cls, media: Media) -> "MediaItem":
-        return cls(url=media.url, media_type=media.media_type)
-
-
-class PostItem(BaseModel):
-    id: UUID
-    user_id: UUID
-    username: str
-    category_id: UUID | None
-    category_name: str | None
-    reference_id: UUID | None
-    reference_title: str | None
-    description: str
-    like_count: int
-    dislike_count: int
-    created_at: datetime
-    media: list[MediaItem]
-
-    @classmethod
-    def from_post(cls, post: Post) -> "PostItem":
-        return cls(
-            id=post.id,
-            user_id=post.user_id,
-            username=post.username if post.username else "Unknown",
-            category_id=post.category_id,
-            category_name=post.category_name,
-            reference_id=post.reference_id,
-            reference_title=post.reference_title,
-            description=post.description,
-            like_count=post.like_count,
-            dislike_count=post.dislike_count,
-            created_at=post.created_at,
-            media=[MediaItem.from_media(m) for m in post.media],
-        )
-
-
 class PostEnvelope(BaseModel):
-    post: PostItem
+    feed_post: FeedPostItem
 
 
 class PostListEnvelope(BaseModel):
-    posts: list[PostItem]
+    feed_posts: list[FeedPostItem]
 
 
 @creator_post_api.post("/creator-posts", status_code=201, response_model=PostEnvelope)
@@ -126,7 +86,7 @@ def create_post(
             hashtag_names=request.hashtag_names,
             media=media_objs,
         )
-        return {"post": PostItem.from_post(post)}
+        return {"feed_post": FeedPostItem.from_post(post)}
     except Exception as e:
         return exception_response(e)
 
@@ -270,7 +230,7 @@ def get_user_creator_posts(
         if before is None:
             before = datetime.now()
         posts = service.get_user_posts(user_id=user_id, limit=limit, before=before)
-        return {"posts": [PostItem.from_post(p) for p in posts]}
+        return {"feed_posts": [FeedPostItem.from_post(p) for p in posts]}
     except Exception as e:
         return exception_response(e)
 
@@ -289,6 +249,6 @@ def get_my_saved_posts(
         if before is None:
             before = datetime.now()
         posts = service.get_user_saves(user_id=user.id, limit=limit, before=before)
-        return {"posts": [PostItem.from_post(p) for p in posts]}
+        return {"feed_posts": [FeedPostItem.from_post(p) for p in posts]}
     except Exception as e:
         return exception_response(e)

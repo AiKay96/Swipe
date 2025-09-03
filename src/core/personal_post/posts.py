@@ -4,6 +4,8 @@ from enum import Enum
 from typing import Protocol
 from uuid import UUID, uuid4
 
+from src.core.feed import FeedPost
+
 from .comments import Comment
 
 
@@ -70,7 +72,7 @@ class PostRepository(Protocol):
 class PersonalPostService(Protocol):
     def create_post(
         self, user_id: UUID, description: str, media: list[Media]
-    ) -> Post: ...
+    ) -> FeedPost: ...
 
     def change_privacy(self, user_id: UUID, post_id: UUID) -> None: ...
 
@@ -94,4 +96,4 @@ class PersonalPostService(Protocol):
         from_user_id: UUID,
         limit: int,
         before: datetime,
-    ) -> list[Post]: ...
+    ) -> list[FeedPost]: ...

@@ -31,11 +31,13 @@ def test_should_create_post(test_client: TestClient) -> None:
     post = FakePersonalPost()
     r = test_client.post("/posts", json=post.as_dict())
     assert r.status_code == 201
-    assert r.json()["post"]["description"] == post.description
+    assert r.json()["feed_post"]["post"]["description"] == post.description
 
 
 def test_should_like_dislike_unlike_post(test_client: TestClient) -> None:
-    post = test_client.post("/posts", json=FakePersonalPost().as_dict()).json()["post"]
+    post = test_client.post("/posts", json=FakePersonalPost().as_dict()).json()[
+        "feed_post"
+    ]["post"]
 
     assert test_client.post(f"/posts/{post['id']}/like").status_code == 200
     assert test_client.post(f"/posts/{post['id']}/unlike").status_code == 200
@@ -43,7 +45,9 @@ def test_should_like_dislike_unlike_post(test_client: TestClient) -> None:
 
 
 def test_should_comment_and_delete(test_client: TestClient) -> None:
-    post = test_client.post("/posts", json=FakePersonalPost().as_dict()).json()["post"]
+    post = test_client.post("/posts", json=FakePersonalPost().as_dict()).json()[
+        "feed_post"
+    ]["post"]
 
     comment_res = test_client.post(
         f"/posts/{post['id']}/comments", json={"content": "test comment"}
@@ -60,7 +64,7 @@ def test_should_change_privacy(test_client: TestClient) -> None:
     post = test_client.post(
         "/posts",
         json=FakePersonalPost().as_dict(),
-    ).json()["post"]
+    ).json()["feed_post"]["post"]
 
     r = test_client.post(f"/posts/{post['id']}/privacy")
     assert r.status_code == 200
@@ -70,7 +74,7 @@ def test_should_get_user_posts(test_client: TestClient, user: FakeUser) -> None:
     post = test_client.post(
         "/posts",
         json=FakePersonalPost().as_dict(),
-    ).json()["post"]
+    ).json()["feed_post"]["post"]
     test_client.post(f"/posts/{post['id']}/privacy")
     r = test_client.get(
         f"/users/{user.id}/personal_posts",
@@ -78,14 +82,14 @@ def test_should_get_user_posts(test_client: TestClient, user: FakeUser) -> None:
     )
 
     assert r.status_code == 200
-    assert len(r.json()["posts"]) == 1
+    assert len(r.json()["feed_posts"]) == 1
 
 
 def test_should_delete_post(test_client: TestClient) -> None:
     post = test_client.post(
         "/posts",
         json=FakePersonalPost().as_dict(),
-    ).json()["post"]
+    ).json()["feed_post"]["post"]
 
     r = test_client.delete(f"/posts/{post['id']}")
     assert r.status_code == 204

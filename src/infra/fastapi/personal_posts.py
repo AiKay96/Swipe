@@ -6,11 +6,15 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, field_validator
 from starlette.responses import JSONResponse
 
-from src.core.personal_post.posts import Media, MediaType, Post, Privacy
+from src.core.personal_post.posts import Media, MediaType, Post
 from src.core.users import User
 from src.infra.fastapi.dependables import (
     PersonalPostServiceDependable,
     get_current_user,
+)
+from src.infra.fastapi.post_models import (
+    FeedPostItem,
+    PersonalMediaItem,
 )
 from src.infra.fastapi.utils import exception_response
 
@@ -64,51 +68,18 @@ def extract_post_fields(post: Post) -> dict[str, Any]:
         "like_count": post.like_count,
         "dislike_count": post.dislike_count,
         "created_at": post.created_at,
-        "media": [MediaItem(url=m.url, media_type=m.media_type) for m in post.media],
+        "media": [
+            PersonalMediaItem(url=m.url, media_type=m.media_type) for m in post.media
+        ],
     }
 
 
-class MediaItem(BaseModel):
-    url: str
-    media_type: MediaType
-
-    @classmethod
-    def from_media(cls, media: Media) -> "MediaItem":
-        return cls(url=media.url, media_type=media.media_type)
-
-
-class PostItem(BaseModel):
-    id: UUID
-    user_id: UUID
-    username: str
-    description: str
-    privacy: Privacy
-    like_count: int
-    dislike_count: int
-    created_at: datetime
-    media: list[MediaItem]
-
-    @classmethod
-    def from_post(cls, post: Post) -> "PostItem":
-        return cls(
-            id=post.id,
-            user_id=post.user_id,
-            username=post.username if post.username else "Unknown",
-            description=post.description,
-            privacy=post.privacy,
-            like_count=post.like_count,
-            dislike_count=post.dislike_count,
-            created_at=post.created_at,
-            media=[MediaItem.from_media(m) for m in post.media],
-        )
-
-
 class PostEnvelope(BaseModel):
-    post: PostItem
+    feed_post: FeedPostItem
 
 
 class PostListEnvelope(BaseModel):
-    posts: list[PostItem]
+    feed_posts: list[FeedPostItem]
 
 
 @personal_post_api.post(
@@ -126,7 +97,7 @@ def create_post(
         post = service.create_post(
             user_id=user.id, description=request.description, media=media_objs
         )
-        return {"post": PostItem.from_post(post)}
+        return {"feed_post": FeedPostItem.from_post(post)}
     except Exception as e:
         return exception_response(e)
 
@@ -255,6 +226,6 @@ def get_user_personal_posts(
         posts = service.get_user_posts(
             user_id=user_id, from_user_id=user.id, limit=limit, before=before
         )
-        return {"posts": [PostItem.from_post(p) for p in posts]}
+        return {"feed_posts": [FeedPostItem.from_post(p) for p in posts]}
     except Exception as e:
         return exception_response(e)
