@@ -12,7 +12,7 @@ from src.infra.fastapi.dependables import (
     CreatorPostServiceDependable,
     get_current_user,
 )
-from src.infra.fastapi.post_models import FeedPostItem
+from src.infra.fastapi.post_models import CommentItem, FeedPostItem
 from src.infra.fastapi.utils import exception_response
 
 creator_post_api = APIRouter(tags=["CreatorPosts"])
@@ -59,6 +59,10 @@ class CommentRequest(BaseModel):
         if len(v) > 1000:
             raise ValueError("Comment too long")
         return v
+
+
+class CommentListEnvelope(BaseModel):
+    comments: list[CommentItem]
 
 
 class PostEnvelope(BaseModel):
@@ -177,6 +181,23 @@ def remove_save(
         return JSONResponse(
             status_code=204, content={"message": "Save removed successfully."}
         )
+    except Exception as e:
+        return exception_response(e)
+
+
+@creator_post_api.get(
+    "/creator-posts/{post_id}/comments",
+    status_code=200,
+    response_model=CommentListEnvelope,
+)
+def list_post_comments(
+    post_id: UUID,
+    service: CreatorPostServiceDependable,
+    user: User = Depends(get_current_user),  # noqa: B008, ARG001
+) -> dict[str, Any] | JSONResponse:
+    try:
+        comments = service.get_comments_by_post(post_id)
+        return {"comments": [CommentItem.from_comment(c) for c in comments]}
     except Exception as e:
         return exception_response(e)
 

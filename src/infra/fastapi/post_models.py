@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from src.core.creator_post.comments import Comment as CreatorComment
 from src.core.creator_post.posts import (
     Media as CreatorMedia,
 )
@@ -13,6 +14,7 @@ from src.core.creator_post.posts import (
     Post as CreatorPost,
 )
 from src.core.feed import FeedPost, Reaction
+from src.core.personal_post.comments import Comment as PersonalComment
 from src.core.personal_post.posts import (
     Media as PersonalMedia,
 )
@@ -39,6 +41,28 @@ class PersonalMediaItem(BaseModel):
     @classmethod
     def from_media(cls, media: PersonalMedia) -> "PersonalMediaItem":
         return cls(url=media.url, media_type=media.media_type)
+
+
+class CommentItem(BaseModel):
+    id: UUID
+    post_id: UUID
+    user_id: UUID
+    content: str
+    created_at: datetime
+
+    @classmethod
+    def from_comment(cls, comment: CreatorComment | PersonalComment) -> "CommentItem":
+        return cls(
+            id=comment.id,
+            post_id=comment.post_id,
+            user_id=comment.user_id,
+            content=comment.content,
+            created_at=comment.created_at,
+        )
+
+
+class CommentListEnvelope(BaseModel):
+    comments: list[CommentItem]
 
 
 class CreatorPostItem(BaseModel):

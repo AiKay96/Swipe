@@ -5,6 +5,7 @@ from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.core.creator_post.references import Reference as DomainReference
 from src.infra.models.creator_post.category_tag import reference_category_tags
 from src.runner.db import Base
 
@@ -52,3 +53,15 @@ class Reference(Base):
         self.description = description
         self.image_url = image_url
         self.attributes = attributes or {}
+
+    def to_object(self) -> DomainReference:
+        return DomainReference(
+            id=self.id,
+            category_id=self.category_id,
+            category_name=self.category.name if self.category else None,
+            title=self.title,
+            description=self.description,
+            image_url=self.image_url,
+            attributes=self.attributes,
+            tag_names=[t.name for t in self.tags],
+        )

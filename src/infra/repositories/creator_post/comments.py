@@ -29,6 +29,10 @@ class CommentRepository:
         comment = self.db.query(CommentModel).filter_by(id=comment_id).first()
         return comment.to_object() if comment else None
 
+    def get_comments_by_post(self, post_id: UUID) -> list[Comment]:
+        comments = self.db.query(CommentModel).filter_by(post_id=post_id).all()
+        return [comment.to_object() for comment in comments]
+
     def delete(self, comment_id: UUID) -> None:
         comment = self.db.query(CommentModel).filter_by(id=comment_id).first()
         if not comment:

@@ -6,15 +6,15 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, field_validator
 from starlette.responses import JSONResponse
 
-from src.core.personal_post.posts import Media, MediaType, Post
+from src.core.personal_post.posts import Media, MediaType
 from src.core.users import User
 from src.infra.fastapi.dependables import (
     PersonalPostServiceDependable,
     get_current_user,
 )
 from src.infra.fastapi.post_models import (
+    CommentItem,
     FeedPostItem,
-    PersonalMediaItem,
 )
 from src.infra.fastapi.utils import exception_response
 
@@ -60,18 +60,8 @@ class CommentRequest(BaseModel):
         return v
 
 
-def extract_post_fields(post: Post) -> dict[str, Any]:
-    return {
-        "id": post.id,
-        "user_id": post.user_id,
-        "description": post.description,
-        "like_count": post.like_count,
-        "dislike_count": post.dislike_count,
-        "created_at": post.created_at,
-        "media": [
-            PersonalMediaItem(url=m.url, media_type=m.media_type) for m in post.media
-        ],
-    }
+class CommentListEnvelope(BaseModel):
+    comments: list[CommentItem]
 
 
 class PostEnvelope(BaseModel):
@@ -173,6 +163,23 @@ def unlike_post(
         return JSONResponse(
             status_code=200, content={"message": "Reaction removed successfully."}
         )
+    except Exception as e:
+        return exception_response(e)
+
+
+@personal_post_api.get(
+    "/posts/{post_id}/comments",
+    status_code=200,
+    response_model=CommentListEnvelope,
+)
+def list_post_comments(
+    post_id: UUID,
+    service: PersonalPostServiceDependable,
+    user: User = Depends(get_current_user),  # noqa: B008, ARG001
+) -> dict[str, Any] | JSONResponse:
+    try:
+        comments = service.get_comments_by_post(post_id)
+        return {"comments": [CommentItem.from_comment(c) for c in comments]}
     except Exception as e:
         return exception_response(e)
 

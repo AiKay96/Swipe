@@ -144,6 +144,9 @@ class CreatorPostService:
         self.comment_repo.delete(comment_id)
         self._record_interaction(user_id, post, "uncomment")
 
+    def get_comments(self, post_id: UUID) -> list[Comment]:
+        return self.comment_repo.get_comments_by_post(post_id)
+
     def get_user_posts(
         self,
         user_id: UUID,

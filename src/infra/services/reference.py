@@ -40,6 +40,7 @@ class ReferenceService:
             references.append(
                 Reference(
                     title=row["title"],
+                    category_id=category_id,
                     description=row.get("description", ""),
                     image_url=row.get("image_url", ""),
                     tag_names=tag_names,
@@ -55,3 +56,12 @@ class ReferenceService:
         if file_type in {"xls", "xlsx"}:
             return pd.read_excel(file, engine="openpyxl")
         raise ValueError("Unsupported file type")
+
+    def get_categories(self) -> list[Category]:
+        return self.category_repo.get_all()
+
+    def get_references_by_category(self, category_id: UUID) -> list[Reference]:
+        return self.reference_repo.get_by_category(category_id)
+
+    def get_reference(self, reference_id: UUID) -> Reference | None:
+        return self.reference_repo.get(reference_id)

@@ -30,11 +30,11 @@ class ReferenceRepository:
 
         for ref in references:
             db_ref = ReferenceModel(
-                category_id=category_id,
                 title=ref.title,
                 description=ref.description,
                 image_url=ref.image_url,
                 attributes=ref.attributes,
+                category_id=category_id,
             )
             self.db.add(db_ref)
             self.db.flush()
@@ -44,3 +44,15 @@ class ReferenceRepository:
             )
 
         self.db.commit()
+
+    def get(self, reference_id: UUID) -> DomainReference | None:
+        reference = self.db.query(ReferenceModel).filter_by(id=reference_id).first()
+        return reference.to_object() if reference else None
+
+    def get_by_category(self, category_id: UUID) -> list[DomainReference]:
+        rows = (
+            self.db.query(ReferenceModel)
+            .filter(ReferenceModel.category_id == category_id)
+            .all()
+        )
+        return [row.to_object() for row in rows]

@@ -32,3 +32,7 @@ class CategoryRepository:
     def get_all_names(self) -> dict[UUID, str]:
         rows = self.db.query(CategoryModel.id, CategoryModel.name).all()
         return {cid: name for cid, name in rows}  # noqa: C416
+
+    def get_all(self) -> list[DomainCategory]:
+        rows = self.db.query(CategoryModel).all()
+        return [row.to_object() for row in rows]

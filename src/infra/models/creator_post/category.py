@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.core.creator_post.categories import Category as DomainCategory
 from src.runner.db import Base
 
 if TYPE_CHECKING:
@@ -33,3 +34,10 @@ class Category(Base):
 
     def __init__(self, name: str) -> None:
         self.name = name
+
+    def to_object(self) -> DomainCategory:
+        return DomainCategory(
+            id=self.id,
+            name=self.name,
+            tag_names=[t.name for t in self.tags],
+        )
