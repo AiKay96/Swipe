@@ -4,14 +4,11 @@ from datetime import datetime
 from math import ceil
 from uuid import UUID
 
-from src.core.creator_post.likes import LikeRepository as CreatorPostLikeRepository
 from src.core.creator_post.posts import Post as CreatorPost
 from src.core.creator_post.posts import PostRepository
-from src.core.creator_post.saves import SaveRepository
-from src.core.feed import FeedPost, Reaction
-from src.core.personal_post.likes import LikeRepository as PersonalPostLikeRepository
-from src.core.personal_post.posts import Post as PersonalPost
+from src.core.feed import FeedPost
 from src.core.personal_post.posts import PostRepository as PersonalPostRepository
+from src.infra.decorators.post import PostDecorator
 from src.infra.repositories.creator_post.feed_preferences import (
     FeedPreferenceRepository,
 )
@@ -33,13 +30,11 @@ def _minute_bucket(dt: datetime) -> str:
 class FeedService:
     personal_post_repo: PersonalPostRepository
     friend_repo: FriendRepository
-    personal_post_like_repo: PersonalPostLikeRepository
     preference_repo: FeedPreferenceRepository
     post_interaction_repo: PostInteractionRepository
     follow_repo: FollowRepository
     post_repo: PostRepository
-    save_repo: SaveRepository
-    creator_post_like_repo: CreatorPostLikeRepository
+    post_decorator: PostDecorator
     _cache: Cache = field(default_factory=Cache)
 
     _ttl_creator_ids_by_cat: int = 120
@@ -56,7 +51,9 @@ class FeedService:
     ) -> list[FeedPost]:
         friend_ids = self.friend_repo.get_friend_ids(user_id)
         posts = self.personal_post_repo.get_posts_by_users(friend_ids, before, limit)
-        return self.decorate_posts(user_id=user_id, posts=posts, is_creator=False)
+        return self.post_decorator.decorate_posts(
+            user_id=user_id, posts=posts, is_creator=False
+        )
 
     def get_creator_feed_by_category(
         self,
@@ -69,7 +66,9 @@ class FeedService:
         cached_ids = self._cache.get(ids_key)
         if cached_ids is not None:
             posts = self._batch_get_creator_posts_with_cache(cached_ids)
-            return self.decorate_posts(user_id=user_id, posts=posts, is_creator=True)
+            return self.post_decorator.decorate_posts(
+                user_id=user_id, posts=posts, is_creator=True
+            )
 
         interacted_posts = self.post_interaction_repo.get_recent_interacted_posts(
             user_id
@@ -103,7 +102,9 @@ class FeedService:
         for p in posts:
             self._cache.set(self._key_post_obj(p.id), p, self._ttl_post_obj)
 
-        return self.decorate_posts(user_id=user_id, posts=posts, is_creator=True)
+        return self.post_decorator.decorate_posts(
+            user_id=user_id, posts=posts, is_creator=True
+        )
 
     def get_creator_feed(
         self,
@@ -119,7 +120,7 @@ class FeedService:
         if cached_ids is not None:
             posts = self._batch_get_creator_posts_with_cache(cached_ids)
             random.shuffle(posts)
-            return self.decorate_posts(
+            return self.post_decorator.decorate_posts(
                 user_id=user_id, posts=posts[:limit], is_creator=True
             )
 
@@ -198,33 +199,6 @@ class FeedService:
             return []
 
         return [(cid, points / total) for cid, points in cleaned]
-
-    def decorate_posts(
-        self,
-        user_id: UUID,
-        posts: list[PersonalPost] | list[CreatorPost],
-        *,
-        is_creator: bool,
-    ) -> list[FeedPost]:
-        if not posts:
-            return []
-
-        ids = [p.id for p in posts]
-
-        if is_creator:
-            reactions = self.creator_post_like_repo.get_user_reactions(user_id, ids)
-            saved_ids = set(self.save_repo.get_user_saves_for_posts(user_id, ids))
-        else:
-            reactions = self.personal_post_like_repo.get_user_reactions(user_id, ids)
-
-        return [
-            FeedPost(
-                post=p,
-                reaction=reactions.get(p.id, Reaction.NONE),
-                is_saved=(p.id in saved_ids if is_creator else None),
-            )
-            for p in posts
-        ]
 
     def _key_creator_ids_by_cat(
         self, user_id: UUID, category_id: UUID, before: datetime, limit: int

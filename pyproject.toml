@@ -76,3 +76,8 @@ select = [
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:'imghdr' is deprecated and slated for removal:DeprecationWarning"
+]

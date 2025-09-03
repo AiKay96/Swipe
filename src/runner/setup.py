@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from src.infra.decorators.post import PostDecorator
 from src.infra.fastapi.auth import auth_api
 from src.infra.fastapi.creator_posts import creator_post_api
 from src.infra.fastapi.feed import feed_api
@@ -112,6 +113,12 @@ def init_app() -> FastAPI:
     app.state.users = user_repo
     app.state.tokens = token_repo
 
+    post_decorator = PostDecorator(
+        personal_post_like_repo=personal_post_like_repo,
+        save_repo=save_repo,
+        creator_post_like_repo=creator_post_like_repo,
+    )
+
     app.state.personal_posts = PersonalPostService(
         post_repo=personal_post_repo,
         like_repo=personal_post_like_repo,
@@ -128,13 +135,11 @@ def init_app() -> FastAPI:
     app.state.feed = FeedService(
         personal_post_repo=personal_post_repo,
         friend_repo=friend_repo,
-        personal_post_like_repo=personal_post_like_repo,
         preference_repo=feed_pref_repo,
         post_interaction_repo=post_init_repo,
         follow_repo=follow_repo,
         post_repo=creator_post_repo,
-        creator_post_like_repo=creator_post_like_repo,
-        save_repo=save_repo,
+        post_decorator=post_decorator,
     )
     app.state.references = ReferenceService(
         reference_repo=reference_repo,
