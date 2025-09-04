@@ -4,6 +4,7 @@ from datetime import datetime
 from math import ceil
 from uuid import UUID
 
+from src.core.creator_post.categories import Category
 from src.core.creator_post.posts import Post as CreatorPost
 from src.core.creator_post.posts import PostRepository
 from src.core.feed import FeedPost
@@ -159,6 +160,9 @@ class FeedService:
 
         random.shuffle(all_posts)
         return all_posts[:limit]
+
+    def get_top_categories(self, user_id: UUID, limit: int = 7) -> list[Category]:
+        return self.preference_repo.get_top_categories(user_id=user_id, limit=limit)
 
     def _mix_category_feed(
         self,

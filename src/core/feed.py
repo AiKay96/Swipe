@@ -4,6 +4,8 @@ from enum import Enum
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
+from src.core.creator_post.categories import Category
+
 if TYPE_CHECKING:
     from src.core.creator_post.posts import Post as CreatorPost
     from src.core.personal_post.posts import Post as PersonalPost
@@ -49,6 +51,8 @@ class FeedService(Protocol):
         is_creator: bool,
     ) -> list[FeedPost]: ...
 
+    def get_top_categories(self, user_id: UUID, limit: int = 7) -> list[Category]: ...
+
 
 class FeedPreferenceRepository(Protocol):
     def init_user_preferences(self, user_id: UUID) -> None: ...
@@ -58,3 +62,5 @@ class FeedPreferenceRepository(Protocol):
     def get_top_categories_with_points(
         self, user_id: UUID, limit: int = 5
     ) -> list[tuple[UUID, int]]: ...
+
+    def get_top_categories(self, user_id: UUID, limit: int = 7) -> list[Category]: ...

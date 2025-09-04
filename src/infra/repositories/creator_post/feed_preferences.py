@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from sqlalchemy import asc, desc, func
 from sqlalchemy.orm import Session
 
+from src.core.creator_post.categories import Category
 from src.infra.models.creator_post.category import Category as CategoryModel
 from src.infra.models.creator_post.feed_preference import FeedPreference
 
@@ -51,6 +53,40 @@ class FeedPreferenceRepository:
         )
 
         return [(cid, int(points)) for (cid, points) in rows]
+
+    def get_top_categories(self, user_id: UUID, limit: int = 7) -> list[Category]:
+        rows = (
+            self.db.query(CategoryModel, FeedPreference.points)
+            .join(FeedPreference, FeedPreference.category_id == CategoryModel.id)
+            .filter(FeedPreference.user_id == user_id)
+            .order_by(FeedPreference.points.desc(), CategoryModel.name.asc())
+            .limit(limit)
+            .all()
+        )
+        if rows:
+            return [(cm.to_object()) for (cm, _) in rows]
+
+        agg_rows = (
+            self.db.query(
+                CategoryModel,
+                func.coalesce(func.sum(FeedPreference.points), 0).label("score"),
+            )
+            .outerjoin(FeedPreference, FeedPreference.category_id == CategoryModel.id)
+            .group_by(CategoryModel.id)
+            .order_by(desc("score"), asc(CategoryModel.name))
+            .limit(limit)
+            .all()
+        )
+        if agg_rows:
+            return [(cm.to_object()) for (cm, _) in agg_rows]
+
+        cat_models = (
+            self.db.query(CategoryModel)
+            .order_by(asc(CategoryModel.name))
+            .limit(limit)
+            .all()
+        )
+        return [cm.to_object() for cm in cat_models]
 
     def get_points_map(self, user_id: UUID) -> dict[UUID, int]:
         rows = (
