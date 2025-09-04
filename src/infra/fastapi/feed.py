@@ -44,6 +44,21 @@ def get_personal_feed(
 
 
 @feed_api.get(
+    "/creator-feed/top-categories", response_model=CategoryListEnvelope, status_code=200
+)
+def get_top_categories(
+    service: FeedServiceDependable,
+    limit: int = Query(25, ge=1, le=25),
+    user: User = Depends(get_current_user),  # noqa: B008
+) -> dict[str, Any] | JSONResponse:
+    try:
+        cats = service.get_top_categories(user_id=user.id, limit=limit)
+        return {"categories": [CategoryItem.from_category(c) for c in cats]}
+    except Exception as e:
+        return exception_response(e)
+
+
+@feed_api.get(
     "/creator-feed/{category_id}", response_model=FeedResponse, status_code=200
 )
 def get_creator_feed_by_category(
@@ -83,20 +98,5 @@ def get_creator_feed(
             limit=limit,
         )
         return {"posts": [FeedPostItem.from_post(p) for p in posts]}
-    except Exception as e:
-        return exception_response(e)
-
-
-@feed_api.get(
-    "/creator-feed/top-categories", response_model=CategoryListEnvelope, status_code=200
-)
-def get_top_categories(
-    service: FeedServiceDependable,
-    limit: int = Query(25, ge=1, le=25),
-    user: User = Depends(get_current_user),  # noqa: B008
-) -> dict[str, Any] | JSONResponse:
-    try:
-        cats = service.get_top_categories(user_id=user.id, limit=limit)
-        return {"categories": [CategoryItem.from_category(c) for c in cats]}
     except Exception as e:
         return exception_response(e)
