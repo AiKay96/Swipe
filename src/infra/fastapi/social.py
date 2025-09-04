@@ -5,53 +5,16 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.core.social import FriendStatus, SocialUser
 from src.core.users import User
+from src.infra.decorators.user import UserDecorator
 from src.infra.fastapi.dependables import (
     SocialServiceDependable,
     get_current_user,
 )
+from src.infra.fastapi.users import UserItem
 from src.infra.fastapi.utils import exception_response
 
 social_api = APIRouter(tags=["Social"])
-
-
-class UserItem(BaseModel):
-    id: UUID
-    username: str
-    display_name: str
-
-    @classmethod
-    def from_user(cls, user: User) -> "UserItem":
-        return cls(id=user.id, username=user.username, display_name=user.display_name)
-
-
-class SocialUserItem(BaseModel):
-    id: UUID
-    username: str
-    display_name: str
-    friend_status: FriendStatus
-    is_following: bool
-    mutual_friend_count: int
-    match_rate: int
-    overlap_categories: list[str]
-
-    @classmethod
-    def from_social_user(cls, user: SocialUser) -> "SocialUserItem":
-        return cls(
-            id=user.user.id,
-            username=user.user.username,
-            display_name=user.user.display_name,
-            friend_status=user.friend_status,
-            is_following=user.is_following,
-            mutual_friend_count=user.mutual_friend_count,
-            match_rate=user.match_rate,
-            overlap_categories=user.overlap_categories,
-        )
-
-
-class SocialUserListEnvelope(BaseModel):
-    users: list[SocialUserItem]
 
 
 class FollowRequest(BaseModel):
@@ -174,6 +137,19 @@ def decline_friend_request(
         return exception_response(e)
 
 
+@social_api.post("/suggestions/skip", status_code=200)
+def skip_suggestion(
+    body: FollowRequest,
+    service: SocialServiceDependable,
+    user: User = Depends(get_current_user),  # noqa: B008
+) -> JSONResponse:
+    try:
+        service.skip_suggestion(user.id, body.target_id, 30)
+        return JSONResponse(status_code=200, content={"message": "Suggestion skipped."})
+    except Exception as e:
+        return exception_response(e)
+
+
 @social_api.get(
     "/followers",
     response_model=UserListEnvelope,
@@ -185,7 +161,12 @@ def get_followers(
 ) -> dict[str, Any] | JSONResponse:
     try:
         return {
-            "users": [UserItem.from_user(u) for u in service.get_followers(user.id)]
+            "users": [
+                UserItem.from_user(
+                    UserDecorator(service).decorate_entity(user_id=user.id, user=u)
+                )
+                for u in service.get_followers(user.id)
+            ]
         }
     except Exception as e:
         return exception_response(e)
@@ -202,7 +183,12 @@ def get_following(
 ) -> dict[str, Any] | JSONResponse:
     try:
         return {
-            "users": [UserItem.from_user(u) for u in service.get_following(user.id)]
+            "users": [
+                UserItem.from_user(
+                    UserDecorator(service).decorate_entity(user_id=user.id, user=u)
+                )
+                for u in service.get_following(user.id)
+            ]
         }
     except Exception as e:
         return exception_response(e)
@@ -218,7 +204,14 @@ def get_friends(
     user: User = Depends(get_current_user),  # noqa: B008
 ) -> dict[str, Any] | JSONResponse:
     try:
-        return {"users": [UserItem.from_user(u) for u in service.get_friends(user.id)]}
+        return {
+            "users": [
+                UserItem.from_user(
+                    UserDecorator(service).decorate_entity(user_id=user.id, user=u)
+                )
+                for u in service.get_friends(user.id)
+            ]
+        }
     except Exception as e:
         return exception_response(e)
 
@@ -235,7 +228,9 @@ def get_incoming_friend_requests(
     try:
         return {
             "users": [
-                UserItem.from_user(u)
+                UserItem.from_user(
+                    UserDecorator(service).decorate_entity(user_id=user.id, user=u)
+                )
                 for u in service.get_incoming_friend_requests(user.id)
             ]
         }
@@ -245,7 +240,7 @@ def get_incoming_friend_requests(
 
 @social_api.get(
     "/friends/suggestions",
-    response_model=SocialUserListEnvelope,
+    response_model=UserListEnvelope,
     status_code=200,
 )
 def get_friend_suggestions(
@@ -255,8 +250,6 @@ def get_friend_suggestions(
 ) -> dict[str, Any] | JSONResponse:
     try:
         suggestions = service.get_friend_suggestions(user.id, limit=limit)
-        return {
-            "users": [SocialUserItem.from_social_user(user) for user in suggestions]
-        }
+        return {"users": [UserItem.from_user(user) for user in suggestions]}
     except Exception as e:
         return exception_response(e)

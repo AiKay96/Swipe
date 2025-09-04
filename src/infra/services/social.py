@@ -9,7 +9,11 @@ from src.infra.repositories.creator_post.categories import CategoryRepository
 from src.infra.repositories.creator_post.feed_preferences import (
     FeedPreferenceRepository,
 )
-from src.infra.repositories.social import FollowRepository, FriendRepository
+from src.infra.repositories.social import (
+    FollowRepository,
+    FriendRepository,
+    SuggestionSkipRepository,
+)
 
 
 @dataclass
@@ -19,6 +23,7 @@ class SocialService:
     user_repo: UserRepository
     feed_pref_repo: FeedPreferenceRepository
     category_repo: CategoryRepository
+    skip_repo: SuggestionSkipRepository
 
     def follow(self, user_id: UUID, target_id: UUID) -> None:
         if user_id == target_id:
@@ -79,6 +84,18 @@ class SocialService:
 
     def decline_friend_request(self, from_user_id: UUID, to_user_id: UUID) -> None:
         self.friend_repo.delete_request(from_user_id, to_user_id)
+
+    def skip_suggestion(
+        self, user_id: UUID, target_id: UUID, ttl_days: int | None = None
+    ) -> None:
+        if (
+            self.is_following(user_id, target_id)
+            or target_id in self.friend_repo.get_friend_ids(user_id)
+            or target_id in self.friend_repo.get_requests_from(user_id)
+            or target_id in self.friend_repo.get_requests_to(user_id)
+        ):
+            return
+        self.skip_repo.skip(user_id, target_id, ttl_days=ttl_days)
 
     def get_followers(self, user_id: UUID) -> list[User]:
         ids = self.follow_repo.get_followers(user_id)
@@ -182,6 +199,8 @@ class SocialService:
         fof -= my_friends
         fof -= set(self.friend_repo.get_requests_to(user_id))
         fof -= set(self.friend_repo.get_requests_from(user_id))
+
+        fof -= self.skip_repo.get_skipped_ids(user_id)
 
         if not fof:
             return []

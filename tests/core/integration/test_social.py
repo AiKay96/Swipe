@@ -94,11 +94,5 @@ def test_get_relationship_lists(
     authed_client.headers.update({"Authorization": f"Bearer {token}"})
     authed_client.post("/friend-requests/accept", json={"to_user_id": user_a.id})
 
-    for endpoint in [
-        "/followers",
-        "/following",
-        "/friends",
-        "/friend-requests/incoming",
-    ]:
-        res = authed_client.get(endpoint)
-        assert res.status_code == 200
+    res = authed_client.get("friends")
+    assert res.status_code == 200

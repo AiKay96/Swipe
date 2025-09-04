@@ -18,6 +18,7 @@ from src.infra.fastapi.social import social_api
 from src.infra.fastapi.users import user_api
 from src.infra.models.creator_post.hashtag import Hashtag  # noqa: F401
 from src.infra.models.creator_post.media import Media as CreatorMedia  # noqa: F401
+from src.infra.models.friend import SuggestionSkip  # noqa F401
 from src.infra.models.personal_post.media import (
     PersonalMedia as PersonalMedia,  # noqa: F401
 )
@@ -49,7 +50,11 @@ from src.infra.repositories.personal_post.likes import (
 from src.infra.repositories.personal_post.posts import (
     PostRepository as PersonalPostRepository,
 )
-from src.infra.repositories.social import FollowRepository, FriendRepository
+from src.infra.repositories.social import (
+    FollowRepository,
+    FriendRepository,
+    SuggestionSkipRepository,
+)
 from src.infra.repositories.tokens import TokenRepository
 from src.infra.repositories.users import UserRepository
 from src.infra.services.creator_post import CreatorPostService
@@ -110,6 +115,7 @@ def init_app() -> FastAPI:
     post_init_repo = PostInteractionRepository(db)
     chat_repo = ChatRepository(db)
     message_repo = MessageRepository(db)
+    skip_repo = SuggestionSkipRepository(db)
 
     app.state.user = user_repo
     app.state.tokens = token_repo
@@ -135,6 +141,7 @@ def init_app() -> FastAPI:
         user_repo=user_repo,
         feed_pref_repo=feed_pref_repo,
         category_repo=category_repo,
+        skip_repo=skip_repo,
     )
     app.state.feed = FeedService(
         personal_post_repo=personal_post_repo,

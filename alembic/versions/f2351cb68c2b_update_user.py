@@ -1,7 +1,7 @@
 """update user
 
 Revision ID: f2351cb68c2b
-Revises: 9e8b70e0f582
+Revises: 2f7c6e18e182
 Create Date: 2025-09-04 13:08:18.877621
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = 'f2351cb68c2b'
-down_revision: Union[str, Sequence[str], None] = '9e8b70e0f582'
+down_revision: Union[str, Sequence[str], None] = '2f7c6e18e182'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

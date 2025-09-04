@@ -1,10 +1,11 @@
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
 from src.infra.models.follow import Follow
-from src.infra.models.friend import Friend, FriendRequest
+from src.infra.models.friend import Friend, FriendRequest, SuggestionSkip
 
 
 @dataclass
@@ -104,3 +105,45 @@ class FriendRepository:
             friend.friend_id
             for friend in self.db.query(Friend).filter_by(user_id=user_id).all()
         ]
+
+
+@dataclass
+class SuggestionSkipRepository:
+    db: Session
+
+    def skip(
+        self, user_id: UUID, target_id: UUID, *, ttl_days: int | None = None
+    ) -> None:
+        expires_at = (
+            (datetime.now() + timedelta(days=ttl_days))
+            if ttl_days
+            else (datetime.now() + timedelta(days=90))
+        )
+        row = (
+            self.db.query(SuggestionSkip)
+            .filter_by(user_id=user_id, target_user_id=target_id)
+            .first()
+        )
+        if row:
+            row.skipped_at = datetime.now()
+            row.expires_at = expires_at
+        else:
+            self.db.add(
+                SuggestionSkip(
+                    user_id=user_id, target_user_id=target_id, expires_at=expires_at
+                )
+            )
+        self.db.commit()
+
+    def get_skipped_ids(self, user_id: UUID) -> set[UUID]:
+        now = datetime.now()
+        rows = (
+            self.db.query(SuggestionSkip.target_user_id, SuggestionSkip.expires_at)
+            .filter(SuggestionSkip.user_id == user_id)
+            .all()
+        )
+        return {
+            target_id
+            for (target_id, expires_at) in rows
+            if (expires_at is None or expires_at > now)
+        }

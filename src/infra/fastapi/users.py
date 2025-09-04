@@ -35,6 +35,8 @@ class UserItem(BaseModel):
     profile_pic: str | None = None
     friend_status: FriendStatus
     is_following: bool
+    match_rate: float
+    overlap_categories: list[str]
 
     @classmethod
     def from_user(
@@ -49,6 +51,8 @@ class UserItem(BaseModel):
             profile_pic=user.user.profile_pic,
             friend_status=user.friend_status,
             is_following=user.is_following,
+            match_rate=user.match_rate,
+            overlap_categories=user.overlap_categories,
         )
 
 

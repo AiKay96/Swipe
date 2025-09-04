@@ -50,7 +50,11 @@ from src.infra.repositories.personal_post.likes import (
 from src.infra.repositories.personal_post.posts import (
     PostRepository as PersonalPostRepository,
 )
-from src.infra.repositories.social import FollowRepository, FriendRepository
+from src.infra.repositories.social import (
+    FollowRepository,
+    FriendRepository,
+    SuggestionSkipRepository,
+)
 from src.infra.repositories.tokens import TokenRepository
 from src.infra.repositories.users import UserRepository
 from src.infra.services.creator_post import CreatorPostService
@@ -104,6 +108,7 @@ def client(db_session: Session) -> TestClient:
 
     follow_repo = FollowRepository(db_session)
     friend_repo = FriendRepository(db_session)
+    skip_repo = SuggestionSkipRepository(db_session)
     token_repo = TokenRepository(db_session)
 
     creator_post_repo = CreatorPostRepository(db_session)
@@ -141,6 +146,7 @@ def client(db_session: Session) -> TestClient:
         user_repo=user_repo,
         feed_pref_repo=feed_pref_repo,
         category_repo=category_repo,
+        skip_repo=skip_repo,
     )
     app.state.feed = FeedService(
         personal_post_repo=personal_post_repo,

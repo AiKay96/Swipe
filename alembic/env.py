@@ -25,6 +25,13 @@ from src.infra.models.creator_post.save import Save as CreatorPostSave
 from src.infra.models.creator_post.category_tag import CategoryTag
 from src.infra.models.creator_post.reference import Reference
 from src.infra.models.creator_post.category import Category
+from src.infra.models.creator_post.feed_preference import FeedPreference
+from src.infra.models.creator_post.post_interaction import PostInteraction
+from src.infra.models.friend import Friend
+from src.infra.models.friend import FriendRequest
+from src.infra.models.friend import SuggestionSkip
+from src.infra.models.follow import Follow
+from src.infra.models.messenger import Message, Chat
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
