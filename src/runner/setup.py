@@ -57,6 +57,7 @@ from src.infra.repositories.social import (
 )
 from src.infra.repositories.tokens import TokenRepository
 from src.infra.repositories.users import UserRepository
+from src.infra.services.cache import Cache
 from src.infra.services.creator_post import CreatorPostService
 from src.infra.services.feed import FeedService
 from src.infra.services.messenger import MessengerService
@@ -151,6 +152,7 @@ def init_app() -> FastAPI:
         follow_repo=follow_repo,
         post_repo=creator_post_repo,
         post_decorator=post_decorator,
+        _cache=Cache(namespace="swipe"),
     )
     app.state.references = ReferenceService(
         reference_repo=reference_repo,

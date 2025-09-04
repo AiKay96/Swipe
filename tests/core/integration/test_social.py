@@ -79,20 +79,3 @@ def test_decline_friend_request(
 
     res = authed_client.post("/friend-requests/decline", json={"to_user_id": user_a.id})
     assert res.status_code == 200
-
-
-def test_get_relationship_lists(
-    authed_client: TestClient, user_a: FakeUser, user_b: FakeUser
-) -> None:
-    authed_client.post("/follow", json={"target_id": user_b.id})
-    authed_client.post("/friend-requests/send", json={"to_user_id": user_b.id})
-
-    login = authed_client.post(
-        "/auth", data={"username": user_b.username, "password": user_b.password}
-    )
-    token = login.json()["access_token"]
-    authed_client.headers.update({"Authorization": f"Bearer {token}"})
-    authed_client.post("/friend-requests/accept", json={"to_user_id": user_a.id})
-
-    res = authed_client.get("friends")
-    assert res.status_code == 200

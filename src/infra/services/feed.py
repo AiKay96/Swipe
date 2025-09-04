@@ -1,7 +1,11 @@
+from __future__ import annotations
+
+import contextlib
 import random
 from dataclasses import dataclass, field
 from datetime import datetime
 from math import ceil
+from typing import Any
 from uuid import UUID
 
 from src.core.creator_post.categories import Category
@@ -17,10 +21,18 @@ from src.infra.repositories.creator_post.post_interactions import (
     PostInteractionRepository,
 )
 from src.infra.repositories.social import FollowRepository, FriendRepository
-from src.infra.services.cache import Cache
+from src.infra.services.cache import Cache  # your Redis-backed implementation
 
+# Tunables (keep if you use elsewhere)
 PER_CATEGORY_HARD_CAP = 12
 FETCH_PER_CATEGORY = 40
+
+# TTLs
+TTL_CREATOR_IDS_BY_CAT = 120
+TTL_CREATOR_IDS_AGG = 180
+TTL_POST_OBJ = 90
+TTL_FOLLOW_IDS = 180
+TTL_TOPCATS = 420
 
 
 def _minute_bucket(dt: datetime) -> str:
@@ -37,12 +49,6 @@ class FeedService:
     post_repo: PostRepository
     post_decorator: PostDecorator
     _cache: Cache = field(default_factory=Cache)
-
-    _ttl_creator_ids_by_cat: int = 120
-    _ttl_creator_ids_agg: int = 180
-    _ttl_post_obj: int = 90
-    _ttl_follow_ids: int = 180
-    _ttl_topcats: int = 420
 
     def init_preferences(self, user_id: UUID) -> None:
         self.preference_repo.init_user_preferences(user_id)
@@ -63,9 +69,15 @@ class FeedService:
         before: datetime,
         limit: int = 20,
     ) -> list[FeedPost]:
+        if limit <= 0:
+            return []
+
+        user_cache = self._user_cache(user_id)
         ids_key = self._key_creator_ids_by_cat(user_id, category_id, before, limit)
-        cached_ids = self._cache.get(ids_key)
-        if cached_ids is not None:
+
+        raw_ids = self._cget(user_cache, ids_key)
+        cached_ids = self._coerce_uuid_list(raw_ids)
+        if cached_ids:
             posts = self._batch_get_creator_posts_with_cache(cached_ids)
             return self.post_decorator.decorate_list(
                 user_id=user_id, posts=posts, is_creator=True
@@ -75,6 +87,7 @@ class FeedService:
             user_id
         )
         interacted_post_ids = [p.id for p in interacted_posts]
+
         followed_user_ids = self._cached_follow_ids(user_id)
 
         followed_posts = self.post_repo.get_posts_by_users_in_category(
@@ -84,12 +97,17 @@ class FeedService:
             limit=50,
             before=before,
         )
+
+        exclude_user_ids = list(followed_user_ids)
+        exclude_user_ids.append(user_id)
+
         trending_posts = self.post_repo.get_trending_posts_in_category(
             category_id=category_id,
-            exclude_user_ids=followed_user_ids,
+            exclude_user_ids=exclude_user_ids,
             exclude_post_ids=interacted_post_ids,
             limit=30,
         )
+
         posts = self._mix_category_feed(
             followed=followed_posts,
             trending=trending_posts,
@@ -97,11 +115,12 @@ class FeedService:
             limit=limit,
         )
 
-        ids = [p.id for p in posts]
-        self._cache.set(ids_key, ids, self._ttl_creator_ids_by_cat)
+        self._cset(
+            user_cache, ids_key, [str(p.id) for p in posts], TTL_CREATOR_IDS_BY_CAT
+        )
 
         for p in posts:
-            self._cache.set(self._key_post_obj(p.id), p, self._ttl_post_obj)
+            self._cset(self._cache, self._key_post_obj(p.id), p, TTL_POST_OBJ)
 
         return self.post_decorator.decorate_list(
             user_id=user_id, posts=posts, is_creator=True
@@ -112,29 +131,33 @@ class FeedService:
         user_id: UUID,
         before: datetime,
         limit: int = 30,
-        top_k_categories: int = 5,
+        top_k_categories: int = 25,
     ) -> list[FeedPost]:
         if limit <= 0:
             return []
+
+        user_cache = self._user_cache(user_id)
         agg_key = self._key_creator_ids_agg(user_id, before, limit, top_k_categories)
-        cached_ids = self._cache.get(agg_key)
-        if cached_ids is not None:
+
+        raw_ids = self._cget(user_cache, agg_key)
+        cached_ids = self._coerce_uuid_list(raw_ids)
+        if cached_ids:
             posts = self._batch_get_creator_posts_with_cache(cached_ids)
             random.shuffle(posts)
             return self.post_decorator.decorate_list(
                 user_id=user_id, posts=posts[:limit], is_creator=True
             )
 
-        cat_weights: list[tuple[UUID, int]] = self._cached_top_categories(
-            user_id, top_k_categories
-        )
+        cat_weights = self._cached_top_categories(user_id, top_k_categories)
         normalized = self._normalize_weights(cat_weights)
+        if not normalized:
+            return []
 
-        all_posts: list[FeedPost] = []
+        all_feedposts: list[FeedPost] = []
         all_ids: list[UUID] = []
 
-        for cid, w in normalized:
-            target = ceil(limit * w)
+        for cid, weight in normalized:
+            target = ceil(limit * weight)
             if target <= 0:
                 continue
             chunk = self.get_creator_feed_by_category(
@@ -143,23 +166,20 @@ class FeedService:
                 before=before,
                 limit=target,
             )
-            all_posts.extend(chunk)
+            all_feedposts.extend(chunk)
             all_ids.extend([fp.post.id for fp in chunk])
 
-        seen: set[UUID] = set()
-        deduped_ids: list[UUID] = []
-        for pid in all_ids:
-            if pid not in seen:
-                seen.add(pid)
-                deduped_ids.append(pid)
+        for fp in all_feedposts:
+            self._cset(
+                self._cache, self._key_post_obj(fp.post.id), fp.post, TTL_POST_OBJ
+            )
 
-        for fp in all_posts:
-            self._cache.set(self._key_post_obj(fp.post.id), fp.post, self._ttl_post_obj)
+        self._cset(
+            user_cache, agg_key, [str(pid) for pid in all_ids], TTL_CREATOR_IDS_AGG
+        )
 
-        self._cache.set(agg_key, deduped_ids, self._ttl_creator_ids_agg)
-
-        random.shuffle(all_posts)
-        return all_posts[:limit]
+        random.shuffle(all_feedposts)
+        return all_feedposts[:limit]
 
     def get_top_categories(self, user_id: UUID, limit: int = 7) -> list[Category]:
         return self.preference_repo.get_top_categories(user_id=user_id, limit=limit)
@@ -171,11 +191,11 @@ class FeedService:
         interacted: list[CreatorPost],
         limit: int,
     ) -> list[CreatorPost]:
-        result = []
-
         random.shuffle(followed)
         random.shuffle(trending)
         random.shuffle(interacted)
+
+        result: list[CreatorPost] = []
 
         num_followed = min(len(followed), int(limit * 0.6))
         result.extend(followed[:num_followed])
@@ -185,7 +205,8 @@ class FeedService:
         result.extend(trending[:num_trending])
 
         remaining = limit - len(result)
-        result.extend(interacted[:remaining])
+        if remaining > 0:
+            result.extend(interacted[:remaining])
 
         random.shuffle(result)
         return result[:limit]
@@ -195,13 +216,10 @@ class FeedService:
     ) -> list[tuple[UUID, float]]:
         if not weights:
             return []
-
-        cleaned = [(cid, points + 1 if points >= 0 else 0) for cid, points in weights]
+        cleaned = [(cid, (points if points >= 0 else 0) + 1) for cid, points in weights]
         total = sum(points for _, points in cleaned)
-
         if total <= 0:
             return []
-
         return [(cid, points / total) for cid, points in cleaned]
 
     def _key_creator_ids_by_cat(
@@ -230,34 +248,51 @@ class FeedService:
         return f"topcats:{user_id}:k{k}"
 
     def _cached_follow_ids(self, user_id: UUID) -> list[UUID]:
+        user_cache = self._user_cache(user_id)
         key = self._key_follow_ids(user_id)
-        cached = self._cache.get(key)
-        if cached is not None:
-            return cached  # type: ignore[no-any-return]
+
+        raw = self._cget(user_cache, key)
+        ids = self._coerce_uuid_list(raw)
+        if ids is not None:
+            return ids
+
         followed_user_ids = self.follow_repo.get_following(user_id)
-        self._cache.set(key, followed_user_ids, self._ttl_follow_ids)
+        self._cset(
+            user_cache, key, [str(uid) for uid in followed_user_ids], TTL_FOLLOW_IDS
+        )
         return followed_user_ids
 
     def _cached_top_categories(self, user_id: UUID, k: int) -> list[tuple[UUID, int]]:
+        user_cache = self._user_cache(user_id)
         key = self._key_topcats(user_id, k)
-        cached = self._cache.get(key)
-        if cached is not None:
-            return cached  # type: ignore[no-any-return]
-        rows = self.preference_repo.get_top_categories_with_points(
+
+        raw = self._cget(user_cache, key)
+        rows = self._coerce_uuid_int_tuples(raw)
+        if rows is not None:
+            return rows
+
+        db_rows = self.preference_repo.get_top_categories_with_points(
             user_id=user_id, limit=k
         )
-        self._cache.set(key, rows, self._ttl_topcats)
-        return rows
+        self._cset(
+            user_cache,
+            key,
+            [(str(cid), int(points)) for cid, points in db_rows],
+            TTL_TOPCATS,
+        )
+        return db_rows
 
     def _batch_get_creator_posts_with_cache(self, ids: list[UUID]) -> list[CreatorPost]:
         if not ids:
             return []
 
+        keys = [self._key_post_obj(pid) for pid in ids]
+        cached_objs = self._cget_many(self._cache, keys)
+
         found: dict[UUID, CreatorPost] = {}
         missing: list[UUID] = []
 
-        for pid in ids:
-            obj = self._cache.get(self._key_post_obj(pid))
+        for pid, obj in zip(ids, cached_objs, strict=False):
             if obj is None:
                 missing.append(pid)
             else:
@@ -267,6 +302,61 @@ class FeedService:
             fetched = self.post_repo.batch_get(missing)
             for p in fetched:
                 found[p.id] = p
-                self._cache.set(self._key_post_obj(p.id), p, self._ttl_post_obj)
+                self._cset(self._cache, self._key_post_obj(p.id), p, TTL_POST_OBJ)
 
         return [found[pid] for pid in ids if pid in found]
+
+    def _user_cache(self, user_id: UUID) -> Cache:
+        return self._cache.user(str(user_id))
+
+    def _cget(self, cache: Cache, key: str) -> Any | None:
+        try:
+            return cache.get(key)
+        except Exception:
+            return None
+
+    def _cset(self, cache: Cache, key: str, value: Any, ttl: int) -> None:
+        try:
+            cache.set(key, value, ttl)
+        except Exception:
+            contextlib.suppress(Exception)
+
+    def _cget_many(self, cache: Cache, keys: list[str]) -> list[Any | None]:
+        try:
+            return [self._cget(cache, k) for k in keys]
+        except Exception:
+            return [None] * len(keys)
+
+    def _coerce_uuid_list(self, v: Any) -> list[UUID] | None:
+        if v is None:
+            return None
+        if not isinstance(v, list):
+            return None
+        out: list[UUID] = []
+        for x in v:
+            if isinstance(x, UUID):
+                out.append(x)
+            else:
+                try:
+                    out.append(UUID(str(x)))
+                except Exception:
+                    return None
+        return out
+
+    def _coerce_uuid_int_tuples(self, v: Any) -> list[tuple[UUID, int]] | None:
+        if v is None:
+            return None
+        if not isinstance(v, list):
+            return None
+        out: list[tuple[UUID, int]] = []
+        for item in v:
+            if not (isinstance(item, (list | tuple)) and len(item) == 2):
+                return None
+            cid_raw, points_raw = item
+            try:
+                cid = cid_raw if isinstance(cid_raw, UUID) else UUID(str(cid_raw))
+                points = int(points_raw)
+            except Exception:
+                return None
+            out.append((cid, points))
+        return out
