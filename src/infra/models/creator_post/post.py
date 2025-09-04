@@ -107,4 +107,5 @@ class Post(Base):
             category_name=self.category.name if self.category else None,
             reference_title=self.reference.title if self.reference else None,
             username=self.user.username,
+            user=self.user.to_object() if self.user else None,
         )

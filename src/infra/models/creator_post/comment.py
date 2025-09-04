@@ -47,4 +47,5 @@ class Comment(Base):
             user_id=self.user_id,
             content=self.content,
             created_at=self.created_at,
+            user=self._user.to_object(),
         )

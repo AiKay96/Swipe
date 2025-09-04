@@ -130,7 +130,7 @@ class CreatorPostService:
         post = self.post_repo.get(post_id)
         if not post:
             raise DoesNotExistError
-        comment = Comment(user_id=user_id, post_id=post_id, content=content)
+        comment = Comment(user_id=user_id, post_id=post_id, content=content, user=None)
         self.comment_repo.create(comment)
         self._record_interaction(user_id, post, "comment")
 

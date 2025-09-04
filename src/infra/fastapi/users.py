@@ -32,7 +32,7 @@ class UserItem(BaseModel):
     username: str
     display_name: str
     bio: str | None
-    profile_picture: str | None = None
+    profile_pic: str | None = None
     friend_status: FriendStatus
     is_following: bool
 
@@ -46,6 +46,7 @@ class UserItem(BaseModel):
             username=user.user.username,
             display_name=user.user.display_name,
             bio=user.user.bio,
+            profile_pic=user.user.profile_pic,
             friend_status=user.friend_status,
             is_following=user.is_following,
         )
@@ -61,6 +62,7 @@ class MeItem(BaseModel):
     username: str
     display_name: str
     bio: str | None
+    profile_pic: str | None = None
 
     @classmethod
     def from_user(cls, user: User) -> "MeItem":
@@ -70,6 +72,7 @@ class MeItem(BaseModel):
             username=user.username,
             display_name=user.display_name,
             bio=user.bio,
+            profile_pic=user.profile_pic,
         )
 
 
@@ -81,6 +84,7 @@ class UserUpdateRequest(BaseModel):
     username: str | None = None
     display_name: str | None = None
     bio: str | None = None
+    profile_pic: str | None = None
 
     @field_validator("username")
     @classmethod
@@ -118,6 +122,18 @@ class UserUpdateRequest(BaseModel):
             raise ValueError("Bio is too short")
         if len(v) > 64:
             raise ValueError("Bio is too long")
+        return v
+
+    @field_validator("profile_pic")
+    @classmethod
+    def profile_pic_validate(cls, v: str) -> str:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            raise ValueError("Profile picture URL cannot be empty")
+        if len(v) > 500:
+            raise ValueError("Profile picture URL is too long")
         return v
 
 

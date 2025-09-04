@@ -3,12 +3,15 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID, uuid4
 
+from src.core.users import User
+
 
 @dataclass
 class Comment:
     post_id: UUID
     user_id: UUID
     content: str
+    user: User | None = None
     created_at: datetime = field(default_factory=datetime.now)
     id: UUID = field(default_factory=uuid4)
 

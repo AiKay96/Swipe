@@ -30,6 +30,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String, unique=True)
     display_name: Mapped[str] = mapped_column(String)
     bio: Mapped[str | None] = mapped_column(String)
+    profile_pic: Mapped[str | None] = mapped_column(String, nullable=True)
 
     personal_posts: Mapped[list[PersonalPost]] = relationship(
         back_populates="user", cascade="all, delete-orphan", lazy="selectin"
@@ -60,12 +61,14 @@ class User(Base):
         username: str,
         display_name: str,
         bio: str | None = None,
+        profile_pic: str | None = None,
     ) -> None:
         self.mail = mail
         self.hashed_password = hashed_password
         self.username = username
         self.display_name = display_name
         self.bio = bio
+        self.profile_pic = profile_pic
 
     def to_object(self) -> DomainUser:
         return DomainUser(
@@ -75,4 +78,5 @@ class User(Base):
             username=self.username,
             display_name=self.display_name,
             bio=self.bio,
+            profile_pic=self.profile_pic,
         )

@@ -47,15 +47,22 @@ class CommentItem(BaseModel):
     id: UUID
     post_id: UUID
     user_id: UUID
+    username: str
+    display_name: str
     content: str
     created_at: datetime
+    profile_pic: str | None = None
 
     @classmethod
     def from_comment(cls, comment: CreatorComment | PersonalComment) -> "CommentItem":
+        assert comment.user is not None
         return cls(
             id=comment.id,
             post_id=comment.post_id,
-            user_id=comment.user_id,
+            user_id=comment.user.id,
+            display_name=comment.user.display_name,
+            username=comment.user.username,
+            profile_pic=comment.user.profile_pic,
             content=comment.content,
             created_at=comment.created_at,
         )
@@ -69,6 +76,8 @@ class CreatorPostItem(BaseModel):
     id: UUID
     user_id: UUID
     username: str
+    display_name: str
+    profile_pic: str | None
     category_id: UUID | None
     category_name: str | None
     reference_id: UUID | None
@@ -77,14 +86,19 @@ class CreatorPostItem(BaseModel):
     like_count: int
     dislike_count: int
     created_at: datetime
+    hashtag_names: list[str]
+    category_tag_names: list[str]
     media: list[CreatorMediaItem]
 
     @classmethod
     def from_post(cls, post: CreatorPost) -> "CreatorPostItem":
+        assert post.user is not None
         return cls(
             id=post.id,
             user_id=post.user_id,
-            username=post.username if post.username else "Unknown",
+            username=post.user.username,
+            display_name=post.user.display_name,
+            profile_pic=post.user.profile_pic,
             category_id=post.category_id,
             category_name=post.category_name,
             reference_id=post.reference_id,
@@ -93,6 +107,8 @@ class CreatorPostItem(BaseModel):
             like_count=post.like_count,
             dislike_count=post.dislike_count,
             created_at=post.created_at,
+            hashtag_names=post.hashtag_names,
+            category_tag_names=post.category_tag_names,
             media=[CreatorMediaItem.from_media(m) for m in post.media],
         )
 
@@ -101,6 +117,8 @@ class PersonalPostItem(BaseModel):
     id: UUID
     user_id: UUID
     username: str
+    display_name: str
+    profile_pic: str | None
     description: str
     privacy: Privacy
     like_count: int
@@ -110,10 +128,13 @@ class PersonalPostItem(BaseModel):
 
     @classmethod
     def from_post(cls, post: PersonalPost) -> "PersonalPostItem":
+        assert post.user is not None
         return cls(
             id=post.id,
             user_id=post.user_id,
-            username=post.username if post.username else "Unknown",
+            username=post.user.username,
+            display_name=post.user.display_name,
+            profile_pic=post.user.profile_pic,
             description=post.description,
             privacy=post.privacy,
             like_count=post.like_count,

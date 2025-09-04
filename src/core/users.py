@@ -10,6 +10,7 @@ class User:
     username: str
     display_name: str
     bio: str | None = None
+    profile_pic: str | None = None
 
     id: UUID = field(default_factory=uuid4)
 
@@ -46,6 +47,7 @@ class UserService(Protocol):
         username: str | None = None,
         display_name: str | None = None,
         bio: str | None = None,
+        profile_pic: str | None = None,
     ) -> None: ...
 
     def generate_unique_username(self) -> str: ...

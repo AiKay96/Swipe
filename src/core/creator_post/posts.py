@@ -5,6 +5,7 @@ from typing import Protocol
 from uuid import UUID, uuid4
 
 from src.core.feed import FeedPost
+from src.core.users import User
 
 from .comments import Comment
 
@@ -29,6 +30,7 @@ class Media:
 @dataclass
 class Post:
     user_id: UUID
+    user: User | None = None
 
     category_id: UUID | None = None
     category_name: str | None = None

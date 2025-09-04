@@ -68,4 +68,5 @@ class PersonalPost(Base):
             dislike_count=self.dislike_count,
             media=[m.to_object() for m in self.media],
             comments=[c.to_object() for c in self.comments],
+            user=self.user.to_object() if self.user else None,
         )
