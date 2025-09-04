@@ -23,7 +23,7 @@ class CategoryListEnvelope(BaseModel):
     categories: list[CategoryItem]
 
 
-@feed_api.get("/personal_feed", response_model=FeedResponse, status_code=200)
+@feed_api.get("/personal-feed", response_model=FeedResponse, status_code=200)
 def get_personal_feed(
     service: FeedServiceDependable,
     before: datetime | None = None,
@@ -43,7 +43,9 @@ def get_personal_feed(
         return exception_response(e)
 
 
-@feed_api.get("/creator_feed/by_category", response_model=FeedResponse, status_code=200)
+@feed_api.get(
+    "/creator-feed/{category_id}", response_model=FeedResponse, status_code=200
+)
 def get_creator_feed_by_category(
     service: FeedServiceDependable,
     category_id: UUID,
@@ -65,7 +67,7 @@ def get_creator_feed_by_category(
         return exception_response(e)
 
 
-@feed_api.get("/creator_feed", response_model=FeedResponse, status_code=200)
+@feed_api.get("/creator-feed", response_model=FeedResponse, status_code=200)
 def get_creator_feed(
     service: FeedServiceDependable,
     before: datetime | None = None,
@@ -86,11 +88,11 @@ def get_creator_feed(
 
 
 @feed_api.get(
-    "/creator_feed/top_categories", response_model=CategoryListEnvelope, status_code=200
+    "/creator-feed/top-categories", response_model=CategoryListEnvelope, status_code=200
 )
 def get_top_categories(
     service: FeedServiceDependable,
-    limit: int = Query(7, ge=1, le=50),
+    limit: int = Query(25, ge=1, le=25),
     user: User = Depends(get_current_user),  # noqa: B008
 ) -> dict[str, Any] | JSONResponse:
     try:

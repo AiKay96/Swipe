@@ -20,7 +20,7 @@ class FeedPreferenceRepository:
 
         self.db.add_all(
             [
-                FeedPreference(user_id=user_id, category_id=cid, points=1)
+                FeedPreference(user_id=user_id, category_id=cid, points=0)
                 for cid in category_ids
             ]
         )

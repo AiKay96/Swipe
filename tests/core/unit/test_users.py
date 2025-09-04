@@ -40,20 +40,6 @@ def test_should_read_user_by_username(db_session: Any) -> None:
     assert found.username == created.username
 
 
-def test_should_find_user_by_username(db_session: Any) -> None:
-    repo = UserRepository(db_session)
-    fake = FakeUser()
-    user = fake.as_user()
-
-    created = repo.create(user)
-
-    found = repo.find_by_username(created.username.lower())
-
-    assert found
-    assert found.username == created.username
-    assert found.mail == created.mail
-
-
 def test_should_not_read_unknown_user(db_session: Any) -> None:
     repo = UserRepository(db_session)
 

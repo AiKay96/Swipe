@@ -10,7 +10,6 @@ from tests.fake import FakeUser
 def test_should_register_user() -> None:
     repo = Mock()
     repo.read_by.return_value = None
-    repo.find_by_username.return_value = None
 
     service = UserService(repo)
     fake = FakeUser()
@@ -58,7 +57,7 @@ def test_should_not_get_unknown_user_by() -> None:
 def test_should_get_user_by_username() -> None:
     repo = Mock()
     fake = FakeUser()
-    repo.find_by_username.return_value = fake.as_user()
+    repo.read_by.return_value = fake.as_user()
 
     service = UserService(repo)
 
@@ -68,7 +67,7 @@ def test_should_get_user_by_username() -> None:
 
 def test_should_not_get_unknown_user_by_username() -> None:
     repo = Mock()
-    repo.find_by_username.return_value = None
+    repo.read_by.return_value = None
 
     service = UserService(repo)
 
@@ -79,7 +78,7 @@ def test_should_not_get_unknown_user_by_username() -> None:
 def test_should_update_user_fields() -> None:
     repo = Mock()
     user = FakeUser()
-    repo.find_by_username.return_value = None
+    repo.read_by.return_value = None
 
     service = UserService(repo)
     update_user = FakeUser()
@@ -106,7 +105,7 @@ def test_should_not_update_to_existing_username() -> None:
     existing_user = FakeUser().as_user()
     new_user = FakeUser().as_user()
 
-    repo.find_by_username.return_value = existing_user
+    repo.read_by.return_value = existing_user
 
     service = UserService(repo)
 

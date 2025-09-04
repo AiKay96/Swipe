@@ -128,12 +128,6 @@ def test_should_not_validate_logged_out_refresh_token() -> None:
 class FakeUserRepo:
     users: list[User]
 
-    def find_by_username(self, username: str) -> User | None:
-        for u in self.users:
-            if u.username == username:
-                return u
-        return None
-
     def read_by(
         self,
         *,
@@ -143,6 +137,9 @@ class FakeUserRepo:
     ) -> User | None:
         for u in self.users:
             if user_id and u.id == user_id:
+                return u
+        for u in self.users:
+            if u.username == username:
                 return u
         return None
 

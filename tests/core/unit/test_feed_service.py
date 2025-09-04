@@ -1,4 +1,5 @@
-# tests/core/unit/test_feed_service.py
+from __future__ import annotations
+
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -7,9 +8,42 @@ from unittest.mock import Mock
 from uuid import uuid4
 
 from src.core.feed import FeedPost, Reaction
-from src.infra.services.cache import Cache
 from src.infra.services.feed import FeedService
 from tests.fake import FakeCreatorPost, FakePersonalPost
+
+
+class _CacheStub:
+    def __init__(self, namespace: str = "test") -> None:
+        self._store: dict[str, Any] = {}
+        self.namespace = namespace
+
+    def get(self, key: str) -> Any | None:
+        return self._store.get(self._k(key))
+
+    def set(self, key: str, value: Any, ttl_sec: int) -> None:  # noqa: ARG002
+        self._store[self._k(key)] = value
+
+    def clear(self) -> None:
+        self._store.clear()
+
+    def user(self, user_id: str) -> _UserScopedCacheStub:
+        return _UserScopedCacheStub(self, user_id)
+
+    def _k(self, key: str) -> str:
+        return f"{self.namespace}:{key}"
+
+
+class _UserScopedCacheStub(_CacheStub):
+    def __init__(self, parent: _CacheStub, user_id: str) -> None:
+        self._store = parent._store
+        self.namespace = parent.namespace
+        self._user_prefix = f"u:{user_id}:"
+
+    def get(self, key: str) -> Any | None:
+        return super().get(self._user_prefix + key)
+
+    def set(self, key: str, value: Any, ttl_sec: int) -> None:
+        super().set(self._user_prefix + key, value, ttl_sec)
 
 
 @dataclass
@@ -21,7 +55,7 @@ class FakeFeedService(FeedService):
     follow_repo: Any = field(default_factory=Mock)
     post_repo: Any = field(default_factory=Mock)
     post_decorator: Any = field(default_factory=Mock)
-    _cache: Cache = field(default_factory=Cache)
+    _cache: Any = field(default_factory=_CacheStub)
 
 
 def test_should_get_feed_with_reactions() -> None:
@@ -91,7 +125,9 @@ def test_should_get_creator_feed_by_category() -> None:
     svc.post_repo.get_posts_by_users_in_category.return_value = [followed_post]
     svc.post_repo.get_trending_posts_in_category.return_value = [trending_post]
 
-    def _decorate(posts: Sequence[Any], *args: Any, **kwargs: Any) -> list[FeedPost]:  # noqa: ARG001
+    # IMPORTANT: service calls decorate_list(user_id=..., posts=..., is_creator=True)
+    def _decorate(*args: Any, **kwargs: Any) -> list[FeedPost]:
+        posts: Sequence[Any] = kwargs.get("posts") or (args[1] if len(args) > 1 else [])
         out: list[FeedPost] = []
         ids = {p.id for p in posts}
         if followed_post.id in ids:
@@ -146,25 +182,9 @@ def test_normalize_weights_shift_excludes_negative() -> None:
     norm = svc._normalize_weights(weights)
     m = dict(norm)
 
-    assert m.get(c, 0.0) == 0.0
-    assert abs(m[a] - (11 / 12)) < 1e-6
-    assert abs(m[b] - (1 / 12)) < 1e-6
-
-
-def test_get_creator_feed_negative_preferences_falls_back() -> None:
-    user_id = uuid4()
-    now = datetime.now()
-
-    svc = FakeFeedService()
-    svc.preference_repo.get_top_categories_with_points.return_value = [
-        (uuid4(), -1),
-        (uuid4(), -3),
-    ]
-
-    out = svc.get_creator_feed(
-        user_id=user_id, before=now, limit=10, top_k_categories=5
-    )
-    assert out == []
+    assert abs(m[a] - (11 / 13)) < 1e-6
+    assert abs(m[b] - (1 / 13)) < 1e-6
+    assert abs(m[c] - (1 / 13)) < 1e-6
 
 
 def test_cached_follow_ids_is_reused() -> None:

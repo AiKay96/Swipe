@@ -42,15 +42,21 @@ class AuthService:
             jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
         )
 
-    def authenticate(self, username: str, password: str) -> tuple[str, str]:
-        user = self.users.find_by_username(username)
-        if not user or not bcrypt.checkpw(password.encode(), user.password.encode()):
-            raise DoesNotExistError("Invalid credentials")
+    def authenticate(self, unique: str, password: str) -> tuple[str, str]:
+        user = self.users.read_by(username=unique)
+        if user and bcrypt.checkpw(password.encode(), user.password.encode()):
+            return (
+                self.create_access_token(str(user.id)),
+                self.create_refresh_token(str(user.id)),
+            )
+        user = self.users.read_by(mail=unique)
+        if user and bcrypt.checkpw(password.encode(), user.password.encode()):
+            return (
+                self.create_access_token(str(user.id)),
+                self.create_refresh_token(str(user.id)),
+            )
 
-        return (
-            self.create_access_token(str(user.id)),
-            self.create_refresh_token(str(user.id)),
-        )
+        raise DoesNotExistError("Invalid credentials")
 
     def decode_token(self, token: str, expected_type: str = "access") -> dict[str, Any]:
         try:

@@ -33,7 +33,7 @@ class UserService:
         return user
 
     def get_by_username(self, username: str) -> User:
-        user = self.repo.find_by_username(username)
+        user = self.repo.read_by(username=username)
         if not user:
             raise DoesNotExistError
         return user
@@ -48,7 +48,7 @@ class UserService:
     ) -> None:
         updates = {}
         if username:
-            existing = self.repo.find_by_username(username)
+            existing = self.repo.read_by(username=username)
             if existing and existing.id != user_id:
                 raise ExistsError
             updates["username"] = username
@@ -62,6 +62,6 @@ class UserService:
     def generate_unique_username(self) -> str:
         faker = Faker()
         username = faker.unique.user_name()
-        while self.repo.find_by_username(username):
+        while self.repo.read_by(username=username):
             username = faker.unique.user_name()
         return str(username)

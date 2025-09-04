@@ -57,7 +57,7 @@ def test_should_get_personal_feed(
     assert r.status_code == 200
 
     r = authed_client.get(
-        "/personal_feed",
+        "/personal-feed",
         params={"limit": 10},
     )
 
