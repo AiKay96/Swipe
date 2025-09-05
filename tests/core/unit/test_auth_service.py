@@ -143,6 +143,12 @@ class FakeUserRepo:
                 return u
         return None
 
+    def find_by_username(self, username: str) -> User | None:
+        for u in self.users:
+            if u.username == username:
+                return u
+        return None
+
     def create(self, user: User) -> User:
         return user
 

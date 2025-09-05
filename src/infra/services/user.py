@@ -33,7 +33,7 @@ class UserService:
         return user
 
     def get_by_username(self, username: str) -> User:
-        user = self.repo.read_by(username=username)
+        user = self.repo.find_by_username(username)
         if not user:
             raise DoesNotExistError
         return user
@@ -45,6 +45,7 @@ class UserService:
         username: str | None = None,
         display_name: str | None = None,
         bio: str | None = None,
+        profile_pic: str | None = None,
     ) -> None:
         updates = {}
         if username:
@@ -56,6 +57,8 @@ class UserService:
             updates["display_name"] = display_name
         if bio:
             updates["bio"] = bio
+        if profile_pic:
+            updates["profile_pic"] = profile_pic
 
         self.repo.update(user_id, updates)
 

@@ -21,9 +21,8 @@ from src.infra.repositories.creator_post.post_interactions import (
     PostInteractionRepository,
 )
 from src.infra.repositories.social import FollowRepository, FriendRepository
-from src.infra.services.cache import Cache  # your Redis-backed implementation
+from src.infra.services.cache import Cache
 
-# Tunables (keep if you use elsewhere)
 PER_CATEGORY_HARD_CAP = 12
 FETCH_PER_CATEGORY = 40
 

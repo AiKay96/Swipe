@@ -1,8 +1,9 @@
+import contextlib
 from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -10,6 +11,8 @@ from src.core.messenger import ChatSummary, Message
 from src.core.users import User
 from src.infra.fastapi.dependables import MessengerServiceDependable, get_current_user
 from src.infra.fastapi.utils import exception_response
+from src.infra.fastapi.ws_auth import ws_get_current_user
+from src.infra.fastapi.ws_manager import manager
 
 messenger_api = APIRouter(tags=["Messenger"])
 
@@ -72,6 +75,62 @@ class MarkSeenResponse(BaseModel):
     updated: int
 
 
+@messenger_api.websocket("/ws")
+async def messenger_ws(
+    ws: WebSocket,
+    service: MessengerServiceDependable,
+    user: User = Depends(ws_get_current_user),  # noqa: B008
+) -> None:
+    await manager.connect(user.id, ws)
+    try:
+        await ws.send_json({"type": "ws.hello", "user_id": str(user.id)})
+
+        while True:
+            payload = await ws.receive_json()
+            evt_type = payload.get("type")
+
+            if evt_type == "message.send":
+                peer_id = UUID(payload["peer_id"])
+                body = (payload.get("body") or "").strip()
+                if not body:
+                    await ws.send_json({"type": "error", "error": "empty_body"})
+                    continue
+
+                # persist
+                msg = service.send_message(
+                    sender_id=user.id, peer_id=peer_id, body=body
+                )
+
+                # wire payload
+                event = {
+                    "type": "message.new",
+                    "message": {
+                        "id": str(msg.id),
+                        "chat_id": str(msg.chat_id),
+                        "sender_id": str(msg.sender_id),
+                        "body": msg.body,
+                        "created_at": msg.created_at.isoformat(),
+                    },
+                }
+
+                # broadcast to both sides (no need to load chat)
+                await manager.send_to_users([user.id, peer_id], event)
+
+            else:
+                await ws.send_json(
+                    {"type": "error", "error": f"unknown_type: {evt_type}"}
+                )
+
+    except WebSocketDisconnect:
+        manager.disconnect(user.id, ws)
+    except Exception:
+        manager.disconnect(user.id, ws)
+        try:
+            await ws.close()
+        except Exception:
+            contextlib.suppress(Exception)
+
+
 @messenger_api.get("/inbox", response_model=InboxResponse, status_code=200)
 def get_inbox(
     service: MessengerServiceDependable,
@@ -119,7 +178,7 @@ def send_message(
     user: User = Depends(get_current_user),  # noqa: B008
 ) -> dict[str, Any] | JSONResponse:
     try:
-        if body.strip():
+        if not body.strip():
             return exception_response(Exception("Message body cannot be empty."))
         msg = service.send_message(sender_id=user.id, peer_id=peer_id, body=body)
         return {"message": MessageItem.from_message(msg)}

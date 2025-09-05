@@ -57,7 +57,7 @@ def test_should_not_get_unknown_user_by() -> None:
 def test_should_get_user_by_username() -> None:
     repo = Mock()
     fake = FakeUser()
-    repo.read_by.return_value = fake.as_user()
+    repo.find_by_username.return_value = fake.as_user()
 
     service = UserService(repo)
 
@@ -67,7 +67,7 @@ def test_should_get_user_by_username() -> None:
 
 def test_should_not_get_unknown_user_by_username() -> None:
     repo = Mock()
-    repo.read_by.return_value = None
+    repo.find_by_username.return_value = None
 
     service = UserService(repo)
 
